@@ -27,7 +27,7 @@ export function countryForEntry(entry,settings={}){
 export function countryNodeLabel(raw,settings={}){
  const entry=typeof raw==='string'?parseCountryEntry(raw):raw;if(!entry)return String(raw||'');if(!entry.isIP)return entry.note||entry.host;
  const meta=countryForEntry(entry,settings),cc=normalizeCountryCode(meta.countryCode),note=entry.note&&entry.note!==entry.host?entry.note:'';
- return (cc?countryFlag(cc)+' '+(meta.confidence==='single-source'?'~':'')+cc:'CC ?')+' · '+entry.host+(note?' · '+note:'')+(meta.confidence==='manual'?' · manual':'');
+ return (cc?countryFlag(cc)+' '+cc+' · ':'')+entry.host+(note?' · '+note:'');
 }
 async function providerResult(p,ip,fetcher){const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),2200);try{
  const r=await fetcher(p.url(ip),{signal:controller.signal,redirect:'manual',headers:{accept:'application/json'}});if(!r.ok||Number(r.headers.get('content-length'))>65536)return null;

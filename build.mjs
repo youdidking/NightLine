@@ -39,6 +39,9 @@ const config = JSON.parse(read(P('config.json')));
 const pkg = JSON.parse(read(P('package.json')));
 const VERSION = pkg.version || '2.3.0';
 
+const {INSTALLED_CHANGES}=await import('./src/changes.js');
+if(INSTALLED_CHANGES.version!==VERSION||!INSTALLED_CHANGES.items?.length)throw Error('Add the installed release notes for '+VERSION+' to src/changes.js before publishing.');
+
 const BUILD_PAGES = process.argv.includes('--pages');
 fs.mkdirSync(P('.arena/fonts'), { recursive: true });
 fs.mkdirSync(P('src/generated'), { recursive: true });
@@ -108,6 +111,7 @@ const FONTS = [
 const sourceText = [
   'src/ui/index.html',
   'src/ui/app.js',
+  'src/ui/warp-core.js',
   'src/sub.js',
   'src/worker.js',
   'src/storage.js',
@@ -185,7 +189,7 @@ for (const [k, v] of Object.entries(fontVars)) {
 }
 const minCss = (await esbuild.transform(rawStyle, { loader: 'css', minify: true })).code.trim();
 const minQr = (await esbuild.transform(read(P('src/ui/vendor/qrcode.js')), { loader: 'js', minify: true })).code.trim();
-const minApp = (await esbuild.transform(read(P('src/ui/network.js')) + '\n' + read(P('src/ui/app.js')), { loader: 'js', minify: true })).code.trim();
+const minApp = (await esbuild.transform(read(P('src/ui/network.js')) + '\n' + read(P('src/ui/warp-core.js')) + '\n' + read(P('src/ui/app.js')), { loader: 'js', minify: true })).code.trim();
 
 let indexTemplate = read(P('src/ui/index.html')).replaceAll('{{VERSION}}', VERSION);
 // Embed original icons from each application's official repository: no runtime CDN dependency.

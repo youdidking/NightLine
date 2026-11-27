@@ -767,8 +767,8 @@ export function buildClashYaml(userView, settings, requestHost) {
 
 export function buildSubscriptionTitle(userView,settings,requestHost){
  const nodes=buildNodeDescriptors(userView,settings,requestHost),codes=[...new Set(nodes.map(n=>n.countryCode).filter(Boolean))];
- const label=codes.length?codes.slice(0,8).map(cc=>countryFlag(cc)+' '+cc).join(' / ')+(codes.length>8?' +'+(codes.length-8):''):'CC ?';
- return `${PANEL_BRAND} · ${userView.name} · ${label}`;
+ const label=codes.length?codes.slice(0,8).map(cc=>countryFlag(cc)+' '+cc).join(' / ')+(codes.length>8?' +'+(codes.length-8):''):'';
+ return `${PANEL_BRAND} · ${userView.name}${label?' · '+label:''}`;
 }
 export function buildSubscriptionLinks(origin,userView,settings,requestHost=new URL(origin).host){
  const title=buildSubscriptionTitle(userView,settings,requestHost),links={};for(const format of ['b64','raw','xray','singbox','clash']){const u=new URL('/sub/'+encodeURIComponent(userView.subToken),origin);u.searchParams.set('format',format);u.hash=title;links[format]=u.toString();}return links;

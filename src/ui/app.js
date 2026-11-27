@@ -1,4 +1,4 @@
-/* NIGHTLINE v2.5.8 — Complete Client Application (Vanilla ES6, zero external deps, zero emojis) */
+/* NIGHTLINE v2.6.0 — Complete Client Application (Vanilla ES6, zero external deps, zero emojis) */
 (function () {
   'use strict';
 
@@ -974,6 +974,7 @@
       b.classList.toggle('on', b.getAttribute('data-th') === theme);
     });
     renderVisitorStrip();
+    if($('ww-kind'))wwRender();
     if (STATE.currentQrText) drawQrInto('main-qr', STATE.currentQrText);
     renderStatelessTicket();
     if (STATE.mode === 'admin') {
@@ -1044,7 +1045,7 @@
       effectiveExpiresAt: 0, remainingDays: 15, startOnFirstUse: true, status: 'active'
     };
     demoStore = {
-      version: '2.5.8',
+      version: '2.6.0',
       mode: 'admin', kvBound: true, kvName: 'PREVIEW_KV', initialized: true, authenticated: true,
       edge: 'FRA', host: 'nightline.example.workers.dev',
       cfIntegration: {
@@ -1082,7 +1083,7 @@
       },
       users: [u1, u2],
       logs: [
-        { ts: Date.now() - 120000, event: 'setup', detail: 'پیش‌نمایش تعاملی پنل آماده است (V2.5.8)' },
+        { ts: Date.now() - 120000, event: 'setup', detail: 'پیش‌نمایش تعاملی پنل آماده است (V2.6.0)' },
         { ts: Date.now() - 30000, event: 'settings', detail: 'پروتکل‌های VLESS + Trojan + Telegram Web Proxy فعال شد' }
       ]
     };
@@ -1189,11 +1190,11 @@
           ok: true,
           repo: OFFICIAL_GITHUB_REPO,
           repoUrl: OFFICIAL_GITHUB_URL,
-          currentVersion: '2.5.8',
-          latestVersion: '2.5.8',
+          currentVersion: '2.6.0',
+          latestVersion: '2.6.0',
           updateAvailable: false,
           releaseUrl: OFFICIAL_GITHUB_URL + '/releases',
-          releaseNotes: 'NIGHTLINE v2.5.8 — Latest release installed.',
+          releaseNotes: 'NIGHTLINE v2.6.0 — Latest release installed.',
           cfConfigured: ds.cfIntegration.hasToken,
           canEditWorkers: true,
           scriptName: ds.cfIntegration.scriptName || 'nightline'
@@ -1203,8 +1204,8 @@
         return {
           ok: true,
           updated: true,
-          previousVersion: '2.5.8',
-          targetVersion: '2.5.8',
+          previousVersion: '2.6.0',
+          targetVersion: '2.6.0',
           scriptName: (body && body.scriptName) || 'nightline',
           reloadAfterMs: 1200
         };
@@ -1361,6 +1362,7 @@
       updateTelemetryKpis();
       syncCfQuotaUI();
       syncGhUpdaterUI(data.version);
+      scheduleReleaseNotice(data.version,data.installedChanges);
       if(!ghAutoStarted){ghAutoStarted=true;setTimeout(function(){if(STATE.mode==='admin')checkGitHubUpdates(true);},1500);}
       if (STATE.cfIntegration && STATE.cfIntegration.hasToken && !STATE.cfUsage && !cfUsageFetching) {
         refreshCfDailyUsage(false);
@@ -1639,6 +1641,7 @@
     $('node-count').textContent = String(nodes.length);
     $('node-count-en').textContent = String(nodes.length);
 
+    renderSubscriptionTicket();
     var nbox = $('admin-nodes');
     nbox.innerHTML = '';
     nodes.forEach(function (n) {
@@ -1663,7 +1666,7 @@
     });
   }
 
-  function currentSubscriptionUrl(user,format){var m=STATE.subscriptionMeta;if(m&&m.userId===user.id&&m.links[format])return m.links[format];var q=new URL(subBaseUrl(user));q.searchParams.set('format',format);q.hash='NIGHTLINE · '+user.name+' · CC ?';return q.toString();}
+  function currentSubscriptionUrl(user,format){var m=STATE.subscriptionMeta;if(m&&m.userId===user.id&&m.links[format])return m.links[format];var q=new URL(subBaseUrl(user));q.searchParams.set('format',format);q.hash='NIGHTLINE · '+user.name;return q.toString();}
   async function refreshedSubscriptionUrl(user,format){var fresh=await loadUserNodes(user.id);if(!fresh)throw Error(tr('دریافت اطلاعات تازهٔ اشتراک ناموفق بود؛ دوباره تلاش کنید.','Fresh subscription metadata could not be loaded; please retry.'));if(!getSelectedUser()||getSelectedUser().id!==user.id)throw Error(tr('کاربر تغییر کرد؛ دوباره تلاش کنید.','Selected user changed; try again.'));return currentSubscriptionUrl(user,format);}
   [['cp-b64','b64'],['cp-xray','xray'],['cp-sb','singbox'],['cp-clash','clash']].forEach(function(pair){$(pair[0]).onclick=async function(){var u=getSelectedUser();if(!u)return;this.disabled=true;try{var pending=refreshedSubscriptionUrl(u,pair[1]);if(navigator.clipboard&&navigator.clipboard.write&&globalThis.ClipboardItem){try{await navigator.clipboard.write([new ClipboardItem({'text/plain':pending.then(function(link){return new Blob([link],{type:'text/plain'});})})]);showToast('لینک اشتراک با برچسب کشور رونوشت شد','Country-labelled subscription URL copied');}catch(e){copyText(await pending,'لینک اشتراک با برچسب کشور','Subscription URL with country label');}}else copyText(await pending,'لینک اشتراک با برچسب کشور','Subscription URL with country label');}catch(e){showToast(e.message,e.message);}finally{this.disabled=false;}};});
   $('cp-doh').onclick=function(){var u=getSelectedUser();if(u)copyText(dohFullUrl(u),'آدرس DoH اختصاصی','Private DoH URL');};
@@ -2095,14 +2098,14 @@
     var targets=results.filter(function(r){return r.entry.isRawIp;});
     for(var i=0;i<targets.length;i+=16){if(scannerController&&scannerController.signal.aborted)break;var part=targets.slice(i,i+16);
       var response=await fetch('/api/tools/geoip',{method:'POST',credentials:'same-origin',headers:{'content-type':'application/json'},body:JSON.stringify({ips:part.map(function(r){return r.entry.bareHost;}),refresh:!!force}),signal:scannerController?scannerController.signal:undefined});
-      if(!response.ok)continue;var data=await response.json();(data.results||[]).forEach(function(g,j){var r=part[j];if(!r)return;r.entry.geo=g;if(!r.entry.countryManual)attachCountryToEntry(r.entry,g.countryCode||'');if(r.element){var field=r.element.querySelector('.scan-country');field.textContent=(r.entry.countryCode||'CC ?')+' · '+(g.confidence==='two-sources'?tr('۲ منبع','2 sources'):r.entry.countryManual?tr('برچسب دستی','manual label'):g.confidence==='conflict'?tr('اختلاف منابع','conflict'):g.confidence==='single-source'?tr('تقریبی · ۱ منبع','approx. · 1 source'):tr('کشور نامعلوم','country unknown'));field.title=(g.sources||[]).join(' + ');}});
+      if(!response.ok)continue;var data=await response.json();(data.results||[]).forEach(function(g,j){var r=part[j];if(!r)return;r.entry.geo=g;if(!r.entry.countryManual)attachCountryToEntry(r.entry,g.countryCode||'');if(r.element){var field=r.element.querySelector('.scan-country');field.textContent=(r.entry.countryCode||'—')+' · '+(g.confidence==='two-sources'?tr('۲ منبع','2 sources'):r.entry.countryManual?tr('برچسب دستی','manual label'):g.confidence==='conflict'?tr('اختلاف منابع','conflict'):g.confidence==='single-source'?tr('تقریبی · ۱ منبع','approx. · 1 source'):tr('کشور نامعلوم','country unknown'));field.title=(g.sources||[]).join(' + ');}});
     }
   }
   function appendScanResult(r){
     if(scannerController.signal.aborted)return;scanCounts.tested++;if(r.ok)scanCounts.http++;else if(r.candidate)scanCounts.candidates++;else if(r.kind==='timeout')scanCounts.timeouts++;
     if(r.ok||r.candidate){lastUserScanCandidates.push(r);lastUserScanCandidates.sort(function(a,b){return a.sortMs-b.sortMs;});if(lastUserScanCandidates.length>500)lastUserScanCandidates.length=500;}
     var item=document.createElement('div');item.className='scan-item '+(scanRangeMode?'range-result ':'')+(r.ok?'state-ok':r.candidate?'state-candidate':r.kind==='timeout'?'state-bad':'state-unknown');
-    item.innerHTML='<span class="scan-entry mono" dir="ltr">'+esc(r.entry.bareHost+(r.entry.port!==443?':'+r.entry.port:''))+' <small class="scan-country">'+esc(r.entry.countryCode||'CC ?')+'</small></span><span class="badge '+(r.ok?'ok':r.kind==='timeout'?'bad':r.candidate?'candidate':'')+'">'+esc(scanBadge(r))+'</span><small class="scan-detail">'+esc(scanDetail(r))+'</small>';
+    item.innerHTML='<span class="scan-entry mono" dir="ltr">'+esc(r.entry.bareHost+(r.entry.port!==443?':'+r.entry.port:''))+' <small class="scan-country">'+esc(r.entry.countryCode||'—')+'</small></span><span class="badge '+(r.ok?'ok':r.kind==='timeout'?'bad':r.candidate?'candidate':'')+'">'+esc(scanBadge(r))+'</span><small class="scan-detail">'+esc(scanDetail(r))+'</small>';
     if(scanRangeMode){var manual=document.createElement('input');manual.className='range-manual-cc mono';manual.maxLength=2;manual.placeholder=tr('کد کشور دستی','CC');manual.setAttribute('aria-label','Manual country code');item.appendChild(manual);var add=document.createElement('button');add.type='button';add.className='btn ghost sm-btn';add.innerHTML=svgIcon('plus','ic-sm')+'<span>ADD</span>';add.onclick=function(){var cc=manual.value.trim().toUpperCase()||r.entry.countryCode;if(cc&&!/^[A-Z]{2}$/.test(cc)){showToast('کد کشور دو حرفی باشد','Use a two-letter code');return;}if(cc)attachCountryToEntry(r.entry,cc);if(manual.value.trim()&&cc)r.entry.rawLine=r.entry.rawLine.replace('#','#manual:');var lines=textToLines($('s-cleanips').value).filter(function(l){return l.split('#')[0].trim()!==r.entry.addrPart;});lines.push(r.entry.rawLine);$('s-cleanips').value=lines.join('\n');add.disabled=true;add.innerHTML=svgIcon('check','ic-sm')+' ADDED';};item.appendChild(add);}
     r.element=item;var box=$('scan-results');box.appendChild(item);while(box.children.length>400)box.firstElementChild.remove();updateScanSummary(false);
   }
@@ -2476,7 +2479,7 @@
   setInterval(function(){if(STATE.mode==='admin'&&!document.hidden)checkGitHubUpdates(true);},900000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden&&STATE.mode==='admin'&&Date.now()-ghLastCheck>900000)checkGitHubUpdates(true);});
   function syncGhUpdaterUI(ver) {
-    var curV = ver || (STATE.ghInfo && STATE.ghInfo.currentVersion) || '2.5.8';
+    var curV = ver || (STATE.ghInfo && STATE.ghInfo.currentVersion) || '2.6.0';
     if ($('gh-mini-ver')) $('gh-mini-ver').textContent = 'V' + curV;
     if ($('gh-cur-ver')) $('gh-cur-ver').textContent = 'V' + curV;
     if($('btn-gh-updater')){$('btn-gh-updater').classList.toggle('update-ready',!!(STATE.ghInfo&&STATE.ghInfo.updateAvailable));$('btn-gh-updater').setAttribute('aria-label',STATE.ghInfo&&STATE.ghInfo.updateAvailable?tr('نسخه جدید آماده است','New version available'):tr('بررسی بروزرسانی','Check for updates'));}
@@ -2643,6 +2646,37 @@
       if ($('gh-modal') && !$('gh-modal').hidden) $('gh-modal').hidden = true;
     }
   });
+
+  /* 2.6: independent WARP workshop, graphical subscriptions, installed edition notes. */
+  var releasePending=null,releaseSeenMemory='',releaseFocus=null;
+  function openInstalledNotes(){if(!releasePending)return;var m=$('release-modal');releaseFocus=document.activeElement;$('release-version').textContent='V'+releasePending.version;$('release-items').innerHTML='';releasePending.items.slice(0,8).forEach(function(note){var li=document.createElement('li');li.textContent=tr(note.fa||'',note.en||note.fa||'');$('release-items').appendChild(li);});m.hidden=false;$('release-close').focus();}
+  function scheduleReleaseNotice(version,notes){if(!notes||notes.version!==version||!Array.isArray(notes.items))return;releasePending=notes;var key='installed.seen.'+location.host;if(LS.get(key)===version||releaseSeenMemory===version)return;function ready(){if(releaseSeenMemory===version||LS.get(key)===version)return;if(!freeModal||freeModal.hidden){if(STATE.mode==='admin')openInstalledNotes();}}setTimeout(ready,300);if(freeCloseBtn&&!freeCloseBtn.dataset.editionBound){freeCloseBtn.dataset.editionBound='1';freeCloseBtn.addEventListener('click',ready);}}
+  function closeInstalledNotes(){if(!releasePending)return;$('release-modal').hidden=true;releaseSeenMemory=releasePending.version;LS.set('installed.seen.'+location.host,releasePending.version);if(releaseFocus&&document.contains(releaseFocus))releaseFocus.focus();}
+  $('release-close').onclick=closeInstalledNotes;
+  $('release-modal').addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();closeInstalledNotes();}else if(e.key==='Tab'){e.preventDefault();$('release-close').focus();}});
+  function renderSubscriptionTicket(){var box=$('subscription-ticket'),u=getSelectedUser();if(!box||!u)return;box.innerHTML='';var top=document.createElement('div');top.className='ticket-heading';var brand=document.createElement('span');brand.className='mono';brand.textContent='NIGHTLINE / FREE';var name=document.createElement('strong');name.textContent=u.name;top.append(brand,name);var badges=document.createElement('div');badges.className='ticket-badges';var unique={};(STATE.currentNodes||[]).forEach(function(n){if(!n.countryCode||unique[n.countryCode])return;unique[n.countryCode]=true;var b=document.createElement('span');b.className='badge';b.textContent=String.fromCodePoint.apply(String,n.countryCode.split('').map(function(c){return 0x1f1e6+c.charCodeAt(0)-65;}))+' '+(COUNTRY_NAMES[n.countryCode]?tr(COUNTRY_NAMES[n.countryCode][0],COUNTRY_NAMES[n.countryCode][1]):n.countryCode);b.title=tr('موقعیت تقریبی IP ورودی · ','Approximate connection-IP location · ')+(n.countryConfidence==='manual'?tr('برچسب دستی','manual label'):n.countryConfidence==='single-source'?tr('یک منبع','one source'):tr('منابع هم‌نظر','agreeing sources'));if(badges.children.length<6)badges.appendChild(b);});if(!badges.children.length){var neutral=document.createElement('span');neutral.className='mono sm';neutral.textContent=tr('لینک اختصاصی شما','YOUR PRIVATE PROFILE');badges.appendChild(neutral);}var replay=document.createElement('button');replay.type='button';replay.id='btn-release-notes';replay.className='btn ghost sm-btn';replay.textContent=tr('تازه‌های این نسخه','EDITION NOTES');replay.onclick=openInstalledNotes;box.append(top,badges,replay);}
+  var warpAccount=null,warpBusy=false,warpOutput=null;
+  function wwStatus(message,error){$('ww-status').textContent=message;$('ww-status').className='workshop-status '+(error?'is-error':'');}
+  function wwOptions(){return {mode:$('ww-mode').value,endpoint:$('ww-endpoint').value.trim(),port:Number($('ww-port').value),mtu:Number($('ww-mtu').value),keepalive:Number($('ww-keepalive').value),dns:$('ww-dns').value,allowed:$('ww-allowed').value,sni:$('ww-sni').value,ipv6:$('ww-ipv6').checked,bypassLAN:$('ww-lan').checked,bypassIran:$('ww-iran').checked,fragment:$('ww-fragment').checked};}
+  function wwRender(){['متعادل · MTU 1280','موبایل · IPv4 / MTU 1280','شبکهٔ پایدار · MTU 1420'].forEach(function(label,i){$('ww-preset').options[i].textContent=tr(label,['Balanced · MTU 1280','Mobile · IPv4 / MTU 1280','Stable network · MTU 1420'][i]);});var kind=$('ww-kind').value,masque=kind==='masque';$('ww-provider').disabled=warpBusy||!masque;$('ww-register').disabled=warpBusy;$('ww-file').disabled=warpBusy;$('ww-kind').disabled=warpBusy;$('ww-settings').hidden=!warpAccount;$('ww-mode').disabled=!masque;$('ww-preset').disabled=masque;['ww-keepalive','ww-mtu','ww-allowed','ww-preset'].forEach(function(id){$(id).parentElement.hidden=masque;});$('ww-sni').parentElement.hidden=!masque;$('ww-mode').parentElement.hidden=!masque;$('ww-kind').parentElement.style.gridColumn=masque?'1 / -1':'';$('ww-dns').parentElement.style.gridColumn=masque?'':'1 / -1';$('ww-fragment').closest('label').hidden=!masque||$('ww-mode').value!=='h2';$('ww-keepalive').disabled=masque;$('ww-mtu').disabled=masque;$('ww-allowed').disabled=masque;$('ww-sni').disabled=!masque;$('ww-fragment').disabled=!masque||$('ww-mode').value!=='h2';if($('ww-fragment').disabled)$('ww-fragment').checked=false;$('ww-format').options[0].disabled=masque;if(masque)$('ww-format').value='xray';var isConf=$('ww-format').value==='conf';$('ww-show-qr').hidden=!isConf;if(!isConf){$('ww-qr-box').hidden=true;$('ww-qr').innerHTML='';}$('ww-lan').disabled=isConf;$('ww-iran').disabled=isConf;$('ww-lan').closest('label').hidden=isConf;$('ww-iran').closest('label').hidden=isConf;warpOutput=null;try{if(warpAccount)warpOutput=NLWarp.build(warpAccount,wwOptions(),$('ww-format').value);$('ww-preview').textContent=warpOutput?warpOutput.text:'';if(warpOutput&&isConf&&!$('ww-qr-box').hidden)drawQrInto('ww-qr',warpOutput.text);$('ww-download').disabled=!warpOutput;$('ww-export-hint').textContent=isConf?tr('فایل را در WireGuard وارد کنید. مسیریابی مستقیم Xray در .conf اعمال نمی‌شود.','Import into WireGuard. Xray direct-routing options do not apply to .conf.'):tr('فایل را در کلاینت با هستهٔ به‌روز Xray وارد کنید. ساخت فایل، تأیید اتصال نیست.','Import into a client with current Xray. File generation does not certify connectivity.');}catch(e){$('ww-preview').textContent='';$('ww-download').disabled=true;$('ww-export-hint').textContent=e.message;}}
+  async function wwLoad(input,kind,source){var next=await NLWarp.normalize(input,kind);warpAccount=next;$('ww-kind').value=next.kind;var ep;try{ep=NLWarp.endpoint(next.endpoint.replace(/:0$/,''),next.kind==='wireguard'?undefined:443);}catch{ep={host:next.kind==='masque'?'162.159.198.2':'engage.cloudflareclient.com',port:next.kind==='masque'?443:2408};}$('ww-endpoint').value=ep.host;$('ww-port').value=ep.port;$('ww-format').value=next.kind==='masque'?'xray':'conf';wwStatus(source+' · '+tr('حساب بارگذاری شد؛ اتصال هنوز آزموده نشده است.','Account loaded; connection is not tested.'),false);wwRender();}
+  function wwSave(text,name,type){var url=URL.createObjectURL(new Blob([text],{type:type||'application/octet-stream'})),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);}
+  $('ww-register').onclick=async function(){if(warpBusy)return;if(!$('ww-consent').checked){wwStatus(tr('ابتدا شرایط Cloudflare را بپذیرید.','Accept Cloudflare terms first.'),true);return;}warpBusy=true;wwRender();try{wwStatus(tr('۱/۲ ساخت کلید در مرورگر؛ سپس ثبت کلید عمومی…','1/2 Generating keys locally; registering public keys…'));var kind=$('ww-kind').value,wg=await NLWarp.keypair('wireguard'),masque=kind==='masque'?await NLWarp.keypair('masque'):null;var r=await api('/api/tools/warp/register','POST',{kind:kind,consent:true,wireguardPublicKey:wg.public_key,...(masque?{masquePublicKey:masque.public_key}:{})});wwStatus(tr('۲/۲ بررسی کلید مقصد و آدرس حساب…','2/2 Validating peer key and tunnel addresses…'));var account={...r,private_key:masque?masque.private_key:wg.private_key,...(masque?{endpoint_pub_key:r.peer_public_key}:{})};await wwLoad(account,kind,tr('ثبت مستقیم Cloudflare','Direct Cloudflare registration'));}catch(e){wwStatus(tr('حساب جدید آماده نشد: ','New account was not prepared: ')+(e.name==='NotSupportedError'?tr('مرورگر به‌روز لازم است؛ می‌توانید فایل حساب را وارد کنید.','Update your browser, or import an account file.'):e.message)+(warpAccount?tr(' · حساب قبلی حفظ شد.',' · Previous account retained.'):''),true);}finally{warpBusy=false;wwRender();}};
+  $('ww-file').onchange=async function(){var f=this.files&&this.files[0];if(!f)return;try{if(f.size>65536)throw Error(tr('فایل حداکثر ۶۴ کیلوبایت باشد.','Maximum file size is 64 KB.'));await wwLoad(await f.text(),null,tr('ورود محلی','Local import'));}catch(e){wwStatus(tr('فایل پذیرفته نشد: ','Import rejected: ')+e.message,true);}finally{this.value='';}};
+  $('ww-provider').onclick=async function(){if(warpBusy)return;if(!$('ww-provider-consent').checked||$('ww-kind').value!=='masque'){wwStatus(tr('نوع MASQUE و رضایت سرویس ثالث را انتخاب کنید.','Select MASQUE and consent to third-party keys.'),true);return;}warpBusy=true;wwRender();var sources=['https://masque.configwireguard.workers.dev/','https://masque.configwireguard2.workers.dev/','https://masque.configwireguard3.workers.dev/','https://masque.configwireguard4.workers.dev/'],start=Number(LS.get('warp.source.next')||0)%4,errors=[];try{for(var n=0;n<4;n++){var i=(start+n)%4;if(Number(LS.get('warp.cool.'+i)||0)>Date.now()){errors.push('API '+(i+1)+': cooldown');continue;}wwStatus(tr('درخواست مستقیم مرورگر از مرجع ','Browser request to source ')+(i+1)+'/4…');try{var ctl=new AbortController(),timer=setTimeout(function(){ctl.abort();},8000);try{var response=await fetch(sources[i],{credentials:'omit',referrerPolicy:'no-referrer',redirect:'error',cache:'no-store',signal:ctl.signal});if(!response.ok){if(response.status===429||response.status===403)LS.set('warp.cool.'+i,String(Date.now()+300000));throw Error('HTTP '+response.status);}var reader=response.body.getReader(),chunks=[],size=0;try{while(true){var part=await reader.read();if(part.done)break;size+=part.value.length;if(size>65536){await reader.cancel();throw Error('Response too large');}chunks.push(part.value);}}finally{reader.releaseLock();}var bytes=new Uint8Array(size),offset=0;chunks.forEach(function(c){bytes.set(c,offset);offset+=c.length;});await wwLoad(new TextDecoder().decode(bytes),'masque',tr('کلید سرویس ثالث · منبع ','Third-party key · source ')+(i+1));LS.set('warp.source.next',String((i+1)%4));return;}finally{clearTimeout(timer);}}catch(e){errors.push('API '+(i+1)+': '+(/base64|P-256|SPKI|Tunnel|تونل|حساب|address|JSON/i.test(e.message)?tr('پاسخ ناقص یا کلید نامعتبر','incomplete/invalid account'):e.name==='AbortError'?'timeout':e.message));}}throw Error(errors.join(' | '));}catch(e){wwStatus(tr('هیچ حساب معتبری دریافت نشد؛ بعداً تلاش یا فایل خودتان را وارد کنید. ','No valid account received; retry later or import your own file. ')+e.message,true);}finally{warpBusy=false;wwRender();}};
+  $('ww-download').onclick=function(){wwRender();if(warpOutput)wwSave(warpOutput.text,'NightLine-free-'+warpAccount.kind+'.'+warpOutput.ext,warpOutput.ext==='json'?'application/json':'text/plain');};
+  $('ww-backup').onclick=function(){if(!warpAccount)return;wwSave(JSON.stringify({...warpAccount,...(warpAccount.kind==='masque'?{endpoint_pub_key:warpAccount.peer_public_key}:{})},null,2),'NightLine-private-account.json','application/json');};
+  $('ww-show-qr').onclick=function(){wwRender();if(warpOutput&&$('ww-format').value==='conf'){$('ww-qr-box').hidden=false;drawQrInto('ww-qr',warpOutput.text);}};
+  $('ww-clear').onclick=function(){$('ww-qr-box').hidden=true;$('ww-qr').innerHTML='';warpAccount=null;warpOutput=null;$('ww-preview').textContent='';wwStatus(tr('حساب از حافظهٔ این تب پاک شد؛ ثبت Cloudflare لغو نشده است.','Account cleared from this tab; Cloudflare registration was not revoked.'));wwRender();};
+  $('ww-kind').onchange=function(){$('ww-qr-box').hidden=true;$('ww-qr').innerHTML='';warpAccount=null;warpOutput=null;$('ww-port').value=this.value==='masque'?443:2408;$('ww-endpoint').value='';$('ww-consent').checked=false;$('ww-provider-consent').checked=false;wwStatus(tr('حسابی بارگذاری نشده است.','No account loaded.'));wwRender();};
+  $('ww-preset').onchange=function(){$('ww-mtu').value=this.value==='fast'?1420:1280;$('ww-keepalive').value=25;$('ww-ipv6').checked=this.value!=='mobile';wwRender();};
+  ['ww-mode','ww-dns','ww-endpoint','ww-port','ww-mtu','ww-keepalive','ww-sni','ww-allowed','ww-ipv6','ww-lan','ww-iran','ww-fragment','ww-format'].forEach(function(id){$(id).addEventListener('change',wwRender);});
+  wwRender();
+  function relayMetric(parent,label,value){var span=document.createElement('span'),bdi=document.createElement('bdi');span.textContent=label+' ';bdi.dir='ltr';bdi.textContent=String(value);span.appendChild(bdi);parent.appendChild(span);}
+  var relayController=null;
+  $('relay-from-list').onclick=function(){$('relay-target').value=textToLines($('s-cleanips').value).slice(0,12).map(function(line){return line.split('#')[0].trim();}).join('\n');};
+  $('relay-stop').onclick=function(){if(relayController)relayController.abort();};
+  $('relay-run').onclick=async function(){if(relayController)return;var u=getSelectedUser();if(!u||u.status!=='active'){showToast('ابتدا کاربر فعال را انتخاب کنید.','Select an active subscriber first.');return;}var lines=textToLines($('relay-target').value);if(!lines.length)lines=[location.host];if(lines.length>12){showToast('هر بار حداکثر ۱۲ آدرس؛ اسکن فهرست محدود نیست.','Relay test: up to 12 targets at once. The scanner remains uncapped.');return;}var entries=lines.map(parseUserCleanLine).filter(Boolean);if(entries.length!==lines.length)return;var protocol=STATE.settings.enableVless!==false?'vless':'trojan',identity={protocol:protocol,uuid:u.uuid,trojanHash:u.trojanHash},settings=STATE.settings;relayController=new AbortController();var signal=relayController.signal;$('relay-run').disabled=true;$('relay-from-list').disabled=true;$('relay-stop').hidden=false;$('relay-results').innerHTML='';var identityLabel=document.createElement('p');identityLabel.className='hint';identityLabel.textContent=tr('آزمون برای ','Testing for ')+u.name+' · '+protocol.toUpperCase();$('relay-results').appendChild(identityLabel);try{await NLNetwork.bounded(entries,2,async function(entry){var row=document.createElement('div');row.className='relay-result';var title=document.createElement('strong');title.className='mono';title.dir='ltr';title.textContent=entry.host+':'+entry.port;var result=document.createElement('span');result.textContent=tr('در حال آزمون…','Testing…');row.append(title,result);$('relay-results').appendChild(row);var url=(location.protocol==='https:'?'wss:':'ws:')+'//'+entry.host+':'+entry.port+((settings.wsPath||'/').split('?')[0]||'/'),r=await NLNetwork.relayTest(url,identity,{signal:signal,timeout:6000,rounds:5});if(signal.aborted){result.textContent=tr('متوقف شد','Stopped');return;}row.classList.add(r.ok?'state-ok':r.replies?'state-candidate':'state-unknown');result.textContent='';result.className='relay-metrics';if(r.replies){relayMetric(result,tr('میانه','Median'),r.ms+' ms');relayMetric(result,tr('بیشینه','Max'),r.p95+' ms');relayMetric(result,tr('پاسخ','Replies'),r.replies+'/'+r.attempts);relayMetric(result,tr('نوسان','Jitter'),r.jitter===null?'—':r.jitter+' ms');}else{var reasons={'websocket-error':tr('برقراری WebSocket یا گواهی TLS ناموفق بود','WebSocket setup or TLS certificate failed'),'tunnel-timeout':tr('تونل در مهلت مقرر پاسخ نداد','Tunnel response timed out'),'websocket-timeout':tr('برقراری WebSocket طول کشید','WebSocket setup timed out'),'http-denied':tr('پاسخ مورد انتظار 204 دریافت نشد','Expected HTTP 204 was not received'),'no-identity':tr('اطلاعات اتصال کاربر موجود نیست','Missing subscriber identity'),'closed-before-http':tr('تونل پیش از پاسخ بسته شد','Tunnel closed before replying')};var reason=r.samples[0]?.reason||'unavailable';result.textContent=tr('تأیید نشد: ','Not verified: ')+(reasons[reason]||tr('پاسخ معتبر دریافت نشد','No valid response'));result.title=reason;}var small=document.createElement('small');small.className='relay-metrics';relayMetric(small,tr('برقراری WS:','WS setup:'),r.setupMs===null?'—':r.setupMs+' ms');relayMetric(small,tr('پاسخ رله پس از WS:','Relay after WS:'),r.relayMs===null?'—':r.relayMs+' ms');relayMetric(small,tr('بی‌پاسخ:','No reply:'),r.noReply+'%');row.appendChild(small);},signal);}catch(e){showToast(e.message,e.message);}finally{relayController=null;$('relay-run').disabled=false;$('relay-from-list').disabled=false;$('relay-stop').hidden=true;}};
 
   /* --------------------------------------------------------------- Boot */
 

@@ -1,3 +1,6 @@
+import { INSTALLED_CHANGES } from './changes.js';
+import { registerWarp } from './warp-registration.js';
+const warpRegistrationLimits=new Map();
 import { refreshCountryLabels } from './geo.js';
 import { lookupCountries } from './geo.js';
 import { parseChainProxy } from './chain.js';
@@ -279,7 +282,7 @@ export default {
         if (!matched) {
           return json({ ok: false, error: 'لینک اشتراک معتبر نیست یا منقضی شده است.' }, 404);
         }
-        if((url.searchParams.get('format')||'').startsWith('warp-'))return json({ok:false,error:'این قابلیت در نسخهٔ ۲.۵.۸ حذف شده است.'},410);
+        if((url.searchParams.get('format')||'').startsWith('warp-'))return json({ok:false,error:'این قالب قدیمی پشتیبانی نمی‌شود؛ خروجی تازه را از کارگاه اتصال بگیرید.'},410);
         let labeledSettings=enrichUserView(matched).status==='active'?await refreshCountryLabels(runtime.settings,fetch,{hosts:buildNodeDescriptors(enrichUserView(matched),runtime.settings,url.host).map(n=>n.address)}):runtime.settings;
         return await serveSubscription(request, matched, labeledSettings, await getInlineAssets());
       }
@@ -552,7 +555,15 @@ async function handleApi(request, url, env, runtime) {
   }
 
   const state = await loadRuntimeState(env, true);
-  if(path.startsWith('/api/warp/'))return json({ok:false,error:'این قابلیت حذف شده است.'},410);
+  if(path.startsWith('/api/warp/'))return json({ok:false,error:'این مسیر قدیمی پشتیبانی نمی‌شود؛ از کارگاه اتصال استفاده کنید.'},410);
+
+  if(path==='/api/tools/warp/register'&&method==='POST'){
+    if(request.headers.get('origin')!==url.origin)return json({ok:false,error:'Origin denied'},403);
+    const previous=warpRegistrationLimits.get(clientIp)||0;if(Date.now()-previous<60000)return json({ok:false,error:'برای ثبت بعدی یک دقیقه صبر کنید / Wait one minute before retrying'},429,{'retry-after':'60'});
+    const body=await readJsonBody(request);if(body.__parseError)return json({ok:false,error:body.__parseError},400);
+    warpRegistrationLimits.set(clientIp,Date.now());if(warpRegistrationLimits.size>256)warpRegistrationLimits.delete(warpRegistrationLimits.keys().next().value);
+    try{return json(await registerWarp(body),200,{'cache-control':'no-store'});}catch(e){return json({ok:false,error:String(e.message||'Registration failed').slice(0,600)},e.status||400,{'cache-control':'no-store'});}
+  }
 
   if(path==='/api/tools/geoip'&&method==='POST'){
     const body=await readJsonBody(request);if(body.__parseError)return json({ok:false,error:body.__parseError},400);
@@ -1118,6 +1129,7 @@ function buildAdminUserSummary(user, settings, host) {
     status: v.status,
     uuid: v.uuid,
     trojanPassword: v.trojanPassword,
+    trojanHash: v.trojanHash,
     subToken: v.subToken,
     trafficLimitGB: v.trafficLimitGB,
     usedUpBytes: v.usedUpBytes,
@@ -1171,6 +1183,7 @@ function buildFullAdminPayload(state, host, cf = null) {
     version: PANEL_VERSION,
     state: 'ready',
     mode: 'admin',
+    installedChanges: INSTALLED_CHANGES,
     host,
     edge: cf?.colo || 'CF-GLOBAL',
     kvBound: state.kvBound,

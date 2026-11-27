@@ -1,7 +1,7 @@
-// Release notes are shipped with the installed Worker, not fetched from a remote description.
-export const INSTALLED_CHANGES={version:'2.6.1',items:[
- {fa:'ثبت رسمی MASQUE اصلاح شد: پذیرش کلید PEM و مسیر جایگزین رسمی Cloudflare؛ هر دو در آزمون زنده ثبت شدند.',en:'Fixed MASQUE PEM peer keys; both official Cloudflare registration hosts passed live enrollment tests.'},
- {fa:'کارگاه مرتب‌تر: آیکن اختصاصی، تنظیمات جمع‌شونده، متن قابل ویرایش، کپی و دانلود همان متن.',en:'Cleaner workshop with a theme-native cloud mark, progressive settings and editable copy/download output.'},
- {fa:'AmneziaWG: بسته‌های اولیه و CPS سازگار با WARP؛ اندازه و تأخیر Fragment برای MASQUE H2 قابل تنظیم است.',en:'WARP-compatible AmneziaWG junk/CPS; adjustable MASQUE H2 fragment size and delay.'},
- {fa:'ابزار محلی Node.js برای آزمون رمزنگاری‌شدهٔ مقصد WireGuard از اینترنت خودتان؛ ورود نتیجه و اعمال مقصد در پنل.',en:'Local Node.js authenticated WireGuard handshake probe, with result import and endpoint apply in the panel.'}
+// Installed edition notes; reusable on subsequent upgrades.
+export const INSTALLED_CHANGES={version:'2.6.2',items:[
+ {fa:'آزمایشگاه شبکه و ابزار HTML مستقل: آزمون مستقیم DNS/HTTPS از مرورگر خودتان، فیلتر و خروجی نتایج.',en:'Browser Network Lab and self-contained HTML: direct DoH/HTTPS tests, result filters and exports.'},
+ {fa:'پیشخوان خلوت‌تر؛ کارگاه WARP و آزمایشگاه مستقل، اسکن پیشرفته و Relay در یک دسته.',en:'Dedicated Workshop and Network Lab tabs; advanced scanning and Relay grouped together.'},
+ {fa:'سبز برای پاسخ معتبر، قرمز برای آزمون تأییدنشده و نارنجی برای سیگنال مبهم؛ پاسخ opaque دیگر پینگ موفق نیست.',en:'Green for verified replies, red for unverified tests, amber for limited signals; opaque is never a successful ping.'},
+ {fa:'حرکت‌های سبک، پشتیبانی کاهش انیمیشن، پیمایش صفحه‌کلید و حذف آزمون خودکار هنگام بازکردن مشاور.',en:'Lightweight motion, reduced-motion support, keyboard tabs and no automatic advisor probe on tab opening.'}
 ]};

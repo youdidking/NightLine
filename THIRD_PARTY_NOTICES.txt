@@ -1,4 +1,4 @@
-NightLine 2.6.1 — Third-party notices
+NightLine 2.6.2 — Third-party notices
 
 QR Code Generator for JavaScript
 Copyright (c) 2009 Kazuhiko Arase

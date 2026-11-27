@@ -32,6 +32,7 @@ import * as esbuild from 'esbuild';
 const babelTraverse = babelTraverseModule.default || babelTraverseModule;
 const babelGenerate = babelGeneratorModule.default || babelGeneratorModule;
 
+await import('./build-lab.mjs');
 const root = path.dirname(fileURLToPath(import.meta.url));
 const P = (...p) => path.join(root, ...p);
 const read = (p) => fs.readFileSync(p, 'utf8');
@@ -111,6 +112,8 @@ const FONTS = [
 const sourceText = [
   'src/ui/index.html',
   'src/ui/app.js',
+  'src/ui/lab.html',
+  'src/ui/lab.js',
   'src/ui/warp-core.js',
   'src/sub.js',
   'src/worker.js',
@@ -183,15 +186,15 @@ const skylineSvg = read(P('assets/skyline.svg'))
 const skylineHtml = `<div class="figure-frame">${skylineSvg}</div>`;
 const sealSvg = read(P('assets/seal.svg')).replace(/\n\s+/g, '');
 
-let rawStyle = read(P('src/ui/style.css'));
+let rawStyle = read(P('src/ui/style.css'))+'\n'+read(P('src/ui/lab.css'));
 for (const [k, v] of Object.entries(fontVars)) {
   rawStyle = rawStyle.replaceAll(`{{${k}}}`, v);
 }
 const minCss = (await esbuild.transform(rawStyle, { loader: 'css', minify: true })).code.trim();
 const minQr = (await esbuild.transform(read(P('src/ui/vendor/qrcode.js')), { loader: 'js', minify: true })).code.trim();
-const minApp = (await esbuild.transform(read(P('src/ui/network.js')) + '\n' + read(P('src/ui/warp-core.js')) + '\n' + read(P('src/ui/app.js')), { loader: 'js', minify: true })).code.trim();
+const minApp = (await esbuild.transform(read(P('src/ui/network.js')) + '\n' + read(P('src/ui/warp-core.js')) + '\n' + read(P('src/ui/lab.js')) + '\n' + read(P('src/ui/app.js')), { loader: 'js', minify: true })).code.trim();
 
-let indexTemplate = read(P('src/ui/index.html')).replaceAll('{{VERSION}}', VERSION);
+let indexTemplate = read(P('src/ui/index.html')).replace('{{LAB_CONTENT}}',read(P('src/ui/lab.html'))).replaceAll('{{VERSION}}', VERSION);
 // Embed original icons from each application's official repository: no runtime CDN dependency.
 for (const [key, file] of Object.entries({
   HIDDIFY: 'hiddify.svg', CLASH: 'clash-verge.svg', SINGBOX: 'sing-box.svg',

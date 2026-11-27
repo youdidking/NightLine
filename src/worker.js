@@ -1,3 +1,4 @@
+import { serveNetworkLab } from './generated/network-lab.js';
 import { INSTALLED_CHANGES } from './changes.js';
 import { registerWarp } from './warp-registration.js';
 const warpRegistrationLimits=new Map();
@@ -208,6 +209,7 @@ export default {
       const path = url.pathname || '/';
       const upgradeHeader = (request.headers.get('upgrade') || '').toLowerCase();
 
+      if(path==='/tools/network-lab'&&upgradeHeader!=='websocket')return serveNetworkLab(request,url);
       // 0) Fast zero-KV favicon response
       if (upgradeHeader !== 'websocket' && path === '/favicon.ico') {
         return new Response(FAVICON_SVG, {

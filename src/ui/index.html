@@ -602,33 +602,26 @@
       </div>
     </div>
 
-    <!-- 6 Editorial Section Tabs -->
-    <nav class="nav-tabs" aria-label="Panel Sections">
-      <button class="tab-btn active" data-tab="sub" type="button">
+    <!-- Categorized, accessible editorial tabs -->
+<nav class="nav-tabs" aria-label="Panel Sections"><button class="tab-btn active" data-tab="sub" type="button">
         <span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-qr"/></svg><span class="fa">پیشخوان و اشتراک</span><span class="en">DISPATCH &amp; SUB</span></span>
         <span class="tnum">01</span>
-      </button>
-      <button class="tab-btn" data-tab="users" type="button">
+      </button><button class="tab-btn" data-tab="users" type="button">
         <span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-users"/></svg><span class="fa">مشترکین</span><span class="en">SUBSCRIBERS</span></span>
         <span class="tnum">02</span>
-      </button>
-      <button class="tab-btn" data-tab="net" type="button">
+      </button><button class="tab-btn" data-tab="workshop" type="button"><span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-shield"/></svg><span class="fa">کارگاه WARP</span><span class="en">WARP WORKSHOP</span></span><span class="tnum">03</span></button><button class="tab-btn" data-tab="net" type="button">
         <span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-bolt"/></svg><span class="fa">شبکه و Fragment</span><span class="en">NET &amp; FRAGMENT</span></span>
-        <span class="tnum">03</span>
-      </button>
-      <button class="tab-btn" data-tab="route" type="button">
-        <span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-globe"/></svg><span class="fa">مسیریابی و DoH</span><span class="en">ROUTING &amp; DoH</span></span>
         <span class="tnum">04</span>
-      </button>
-      <button class="tab-btn" data-tab="advisor" type="button">
-        <span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-radar"/></svg><span class="fa">مشاور هوشمند</span><span class="en">ISP ADVISOR</span></span>
-        <span class="tnum">05</span>
-      </button>
-      <button class="tab-btn" data-tab="sec" type="button">
-        <span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-shield"/></svg><span class="fa">استتار و پشتیبان</span><span class="en">STEALTH &amp; BACKUP</span></span>
+      </button><button class="tab-btn" data-tab="lab" type="button"><span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-radar"/></svg><span class="fa">آزمایشگاه شبکه</span><span class="en">NETWORK LAB</span></span><span class="tnum">05</span></button><button class="tab-btn" data-tab="route" type="button">
+        <span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-globe"/></svg><span class="fa">مسیریابی و DoH</span><span class="en">ROUTING &amp; DoH</span></span>
         <span class="tnum">06</span>
-      </button>
-    </nav>
+      </button><button class="tab-btn" data-tab="advisor" type="button">
+        <span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-radar"/></svg><span class="fa">مشاور هوشمند</span><span class="en">ISP ADVISOR</span></span>
+        <span class="tnum">07</span>
+      </button><button class="tab-btn" data-tab="sec" type="button">
+        <span class="tab-lbl"><svg class="ic ic-sm"><use href="#i-shield"/></svg><span class="fa">استتار و پشتیبان</span><span class="en">STEALTH &amp; BACKUP</span></span>
+        <span class="tnum">08</span>
+      </button></nav>
 
     <!-- ─────────────── TAB 1: DISPATCH, LIVE CHART & SUBSCRIPTIONS ─────────────── -->
     <div class="tab-pane" id="pane-sub">
@@ -707,6 +700,7 @@
         </div>
       </div>
 
+<div class="overview-launchpad" aria-label="Quick navigation"><button class="launch-card" type="button" data-jump="lab"><svg class="ic" aria-hidden="true"><use href="#i-radar"/></svg><span><strong><span class="fa">آزمایشگاه شبکه</span><span class="en">NETWORK LAB</span></strong><small class="fa">DNS، IP و پاسخ واقعی از مسیر شما</small></span><svg class="ic ic-sm" aria-hidden="true"><use href="#i-external"/></svg></button><button class="launch-card" type="button" data-jump="workshop"><svg class="ic" aria-hidden="true"><use href="#i-shield"/></svg><span><strong><span class="fa">کارگاه اتصال</span><span class="en">WARP WORKSHOP</span></strong><small class="fa">حساب شخصی، تنظیم و خروجی مستقل</small></span><svg class="ic ic-sm" aria-hidden="true"><use href="#i-external"/></svg></button><button class="launch-card" type="button" data-jump="net"><svg class="ic" aria-hidden="true"><use href="#i-sliders"/></svg><span><strong><span class="fa">تنظیم اتصال پنل</span><span class="en">CONNECTION SETTINGS</span></strong><small class="fa">پروتکل، TLS، Fragment و خروجی Worker</small></span><svg class="ic ic-sm" aria-hidden="true"><use href="#i-external"/></svg></button></div>
       <div class="cols">
         <div class="card">
           <div class="stat-strip" style="margin-bottom:10px">
@@ -844,7 +838,11 @@
           </div></div>
         </div>
       </section>
-<section class="card warp-workshop" id="warp-workshop">
+
+
+    </div>
+
+<div class="tab-pane" id="pane-workshop" hidden><section class="card warp-workshop" id="warp-workshop">
  <p class="kicker"><svg class="ic cloudflare-mark" viewBox="0 0 64 40" fill="none" aria-hidden="true"><path d="M5 33h52a6 6 0 0 0-1-12 12 12 0 0 0-17-10A17 17 0 0 0 7 22a6 6 0 0 0-2 11Z" fill="currentColor" opacity=".2"/><path d="M5 33h52M10 25h24l5-8m-20 2a14 14 0 0 1 27-3 10 10 0 0 1 13 11" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg><span class="fa">کارگاه اتصال · ابزار مستقل</span><span class="en">CONNECTION WORKSHOP · INDEPENDENT TOOL</span><span class="badge inv">WARP</span></p>
  <h3 class="head"><span class="fa">حساب خودتان، تنظیمات دلخواهتان</span><span class="en">Your account. Your configuration.</span></h3>
  <p class="hint"><span class="fa">ثبت یا ورود حساب ← تنظیم اتصال ← دانلود. کلید خصوصی در همین تب مرورگر می‌ماند؛ برای نگه‌داری، پشتیبان بگیرید. این خروجی‌ها مستقل از کاربر انتخاب‌شده، سهمیه و انقضای Worker هستند.</span><span class="en">Register or import → tune → download. Private keys stay in this browser tab; save a backup. Exports are independent of the selected subscriber, Worker quota and expiry.</span></p>
@@ -856,7 +854,6 @@
  <details class="workshop-advanced"><summary>Cloudflare API · مسیر ثبت رسمی</summary><label class="fld-label" for="ww-api-host">Registration host</label><select id="ww-api-host"><option value="primary">api.cloudflareclient.com</option><option value="devices">api.devices.cloudflare.com · Alternative</option></select><p class="hint">اگر مسیر اول 403 داد، مسیر رسمی دوم را انتخاب کنید و یک بار دوباره تلاش کنید. محدودیت 429 را با تغییر مسیر دور نزنید. این انتخاب فقط مسیر ثبت حساب را تغییر می‌دهد، نه مقصد تونل.</p></details>
  <label class="chk"><input id="ww-consent" type="checkbox"><span><span class="fa">شرایط WARP کلادفلر را می‌پذیرم؛ ثبت از مسیر Worker انجام می‌شود و ممکن است محدود شود.</span><span class="en">I accept Cloudflare WARP terms; registration uses this Worker and may be rate-limited.</span> <a href="https://www.cloudflare.com/application/terms/" target="_blank" rel="noopener noreferrer">Terms <svg class="ic ic-sm"><use href="#i-external"/></svg></a></span></label>
  <div class="actions"><button class="btn primary" id="ww-register" type="button"><svg class="ic"><use href="#i-plus"/></svg><span class="fa">تلاش برای ثبت حساب شخصی</span><span class="en">REGISTER MY ACCOUNT</span></button><label class="btn ghost" for="ww-file"><svg class="ic"><use href="#i-upload"/></svg><span class="fa">ورود فایل حساب</span><span class="en">IMPORT ACCOUNT</span></label><input id="ww-file" type="file" accept=".json,.conf,application/json,text/plain" hidden></div>
- <details class="workshop-advanced"><summary><span class="fa">روش دیگر برای MASQUE · سرویس مرجع</span><span class="en">MASQUE alternative · reference service</span></summary><p class="hint"><span class="fa">سرویس ثالث کلید را می‌سازد و آن را می‌داند. درخواست از مرورگر شماست؛ cookie، توکن پنل و Referer ارسال نمی‌شود. خطای منبع به معنی ساخت موفق نیست. فهرست کلید عمومیِ اشتراکی وارد نمی‌شود.</span><span class="en">A third party creates and knows this key. The browser sends no panel cookies, token or Referer. Failed sources are not success. No shared public-key list is imported.</span></p><label class="chk"><input id="ww-provider-consent" type="checkbox"><span><span class="fa">دسترسی سرویس ثالث به کلید تحویلی را می‌پذیرم.</span><span class="en">I accept that the provider knows the delivered private key.</span></span></label><button class="btn ghost" id="ww-provider" type="button"><span class="fa">دریافت از مرجع با رضایت من</span><span class="en">REQUEST WITH MY CONSENT</span></button></details>
  <div id="ww-status" class="workshop-status" role="status" aria-live="polite"><span class="fa">هنوز حسابی وارد نشده است.</span><span class="en">No account loaded.</span></div>
  <div id="ww-settings" hidden>
   <div class="workshop-grid"><div><label class="fld-label" for="ww-mode"><span class="fa">انتقال MASQUE</span><span class="en">MASQUE transport</span></label><select id="ww-mode"><option value="h2">H2 · TCP</option><option value="h3">H3 · UDP / QUIC</option></select></div><div><label class="fld-label" for="ww-dns">DNS</label><select id="ww-dns"><option value="1.1.1.1,1.0.0.1">Cloudflare</option><option value="8.8.8.8,8.8.4.4">Google</option><option value="9.9.9.9,149.112.112.112">Quad9</option></select></div></div>
@@ -876,10 +873,52 @@
   <div id="ww-qr-box" class="qr-center" hidden><div class="qrbox"><div class="qr" id="ww-qr"></div></div></div><p id="ww-export-hint" class="hint"></p><details><summary><span class="fa">پیش‌نمایش محرمانهٔ فایل</span><span class="en">Sensitive file preview</span></summary><textarea id="ww-preview" class="workshop-preview" dir="ltr" rows="16" spellcheck="false" aria-label="Sensitive editable configuration"></textarea><button id="ww-copy" class="btn ghost" type="button">کپی متن کانفیگ</button><p class="hint">متن قابل ویرایش است؛ دانلود و کپی، همین متن را می‌گیرند. تغییر تنظیمات بالا متن را دوباره می‌سازد. ویرایش دستی اعتبارسنجی پروتکل نمی‌شود.</p></details>
  </div>
 
-</section>
-
-    </div>
-
+</section></div><div class="tab-pane" id="pane-lab" hidden><div class="card"><p class="lab-download"><a class="btn ghost" href="/tools/network-lab?download=1" download="NightLine-Network-Lab.html"><svg class="ic"><use href="#i-download"/></svg><span class="fa">دانلود ابزار HTML مستقل</span><span class="en">DOWNLOAD STANDALONE HTML</span></a><span class="hint">بدون نصب؛ فایل را در مرورگر کامل خودتان باز کنید. آزمون‌های این صفحه از اینترنت شما اجرا می‌شوند.</span></p>{{LAB_CONTENT}}</div><details id="advanced-radar" class="card"><summary><strong>اسکن پیشرفتهٔ رنج‌ها، فهرست IP پنل و Relay Delay</strong></summary><div class="card">
+<p class="kicker"><svg class="ic"><use href="#i-radar"></use></svg><span class="fa">رادار IP و دامنه · وضعیت زنده</span><span class="en">IP &amp; DOMAIN RESPONSE CHECK</span></p>
+<label class="fld-label" for="s-cleanips">
+<span class="fa">فهرست IP / دامنهٔ شما (هر خط یک مورد؛ کد تقریبی کشور برای نام نود: <code>172.67.73.163#US|MCI</code>)</span>
+<span class="en">YOUR IPs / DOMAINS (ONE PER LINE; APPROX. COUNTRY TAG: <code>172.67.73.163#US|MCI</code>)</span>
+</label>
+<textarea id="s-cleanips" style="min-height:120px"></textarea>
+<div class="actions" style="margin-top:10px">
+<button class="btn primary sm-btn" id="btn-scan-user-list" type="button">
+<svg class="ic ic-sm"><use href="#i-bolt"></use></svg>
+<span class="fa">اسکن لیستِ فعلیِ شما</span><span class="en">SCAN YOUR LISTED IPs</span>
+</button>
+<button class="btn ghost sm-btn" hidden="" id="btn-prune-clean" type="button">
+<svg class="ic ic-sm"><use href="#i-check"></use></svg>
+<span class="fa">اولویت‌بندی نامزدها (بدون حذف IP)</span><span class="en">PRIORITIZE CANDIDATES (KEEP IPs)</span>
+</button>
+<button class="btn ghost sm-btn" id="btn-scan-clean" type="button">
+<svg class="ic ic-sm"><use href="#i-radar"></use></svg>
+<span class="fa">رنج‌های رسمی کلادفلر</span><span class="en">OFFICIAL CF RANGES</span>
+</button>
+<button class="btn ghost sm-btn" id="btn-add-presets" type="button">
+<svg class="ic ic-sm"><use href="#i-plus"></use></svg>
+<span class="fa">افزودن منتخب‌ها</span><span class="en">ADD PRESETS</span>
+</button>
+</div>
+<div class="actions" style="margin-top:7px"><button class="btn ghost sm-btn" id="btn-country-list" type="button"><span class="fa">بازبینی کشور IPهای فهرست</span><span class="en">RECHECK LIST GEOIP</span></button><label class="chk"><input id="scan-geo" type="checkbox"/><span><span class="fa">برچسب کشور تقریبی (سرویس ثالث؛ اختیاری)</span><span class="en">Approximate GeoIP label (third party; optional)</span></span></label><button class="btn ghost sm-btn" hidden="" id="btn-scan-stop" type="button"><span class="fa">توقف اسکن</span><span class="en">STOP SCAN</span></button></div>
+<div class="scan-options"><label class="fld-label"><span class="fa">درخواست هم‌زمان</span><span class="en">CONCURRENCY</span><select id="scan-parallel"><option value="4">4 · آرام</option><option value="8" selected>8 · متعادل</option><option value="12">12 · سریع</option></select></label><label class="fld-label"><span class="fa">مهلت هر تلاش</span><span class="en">PER-ATTEMPT TIMEOUT</span><select id="scan-timeout"><option value="2500">2.5 s</option><option value="4000" selected>4 s</option><option value="7000">7 s</option></select></label><div class="hint"><span class="fa">رادار دوکاناله: تصویر + درخواست شبکه، سه نوبت و خودآزمایی. فقط پورت‌های TLS بررسی می‌شوند؛ ورودی پورت‌های دیگر در اسکن کنار گذاشته می‌شود.</span><span class="en">Dual-channel image/fetch radar, three rounds and control checks. Only TLS ports are scanned; other port entries are skipped.</span></div></div>
+<p class="hint"><span class="fa">گام ۱: نامزدهای شبکه را پیدا و اضافه کنید. گام ۲: با خروجی خودکار Xray، اتصال کانفیگ را در خود برنامه بررسی کنید. «واکنش» برآورد مرورگر است، نه تأیید اتصال.</span><span class="en">Find candidates, then use the automatic Xray profile to test config connectivity. Browser reaction time is an estimate, not connection proof.</span></p>
+<p class="hint" hidden id="scan-control"></p><p class="hint" hidden id="scan-calibration"></p>
+<div class="range-panel" hidden="" id="cf-ranges-panel">
+<div class="stat-strip">
+<strong class="fld-label" style="margin:0"><span class="fa">منبع: </span><span class="en">SOURCE: </span><a class="inline-link mono" href="https://api.cloudflare.com/client/v4/ips" rel="noopener noreferrer" target="_blank">Cloudflare Public IP API <svg class="ic ic-sm"><use href="#i-external"></use></svg></a></strong>
+<span class="mono sm" id="cf-ranges-total">—</span>
+</div>
+<div class="range-toolbar"><label class="fld-label"><span class="fa">حجم اسکن کل</span><span class="en">SCAN SIZE</span><select id="scan-budget"><option value="64" data-fa="64 · سریع" data-en="64 · Quick">64 · سریع</option><option value="256" selected data-fa="256 · متعادل" data-en="256 · Balanced">256 · متعادل</option><option value="1024" data-fa="1024 · عمیق" data-en="1024 · Deep">1024 · عمیق</option><option value="4096" data-fa="4096 · گسترده" data-en="4096 · Broad">4096 · گسترده</option><option value="continuous" data-fa="پیوسته · تا زدن توقف" data-en="Continuous · until stopped">پیوسته · تا زدن توقف</option></select></label><div class="actions"><button type="button" class="btn ghost sm-btn" id="ranges-all">همه</button><button type="button" class="btn ghost sm-btn" id="ranges-v4">IPv4</button><button type="button" class="btn ghost sm-btn" id="ranges-v6">IPv6</button><button type="button" class="btn ghost sm-btn" id="ranges-none">هیچ‌کدام</button></div></div>
+<p class="hint"><span class="fa">کشورِ نمایش‌داده‌شده، اطلاعات تقریبی IP ورودی است؛ نه کشور خروجی. اگر موقعیت تأیید نشود، فقط نام و IP اتصال نمایش داده می‌شود.</span><span class="en">Country is approximate connection-IP metadata, not exit location. If unavailable, only the name and IP are shown.</span></p>
+<p class="hint"><span class="fa">رنج‌ها را تیک بزنید و حجم را یک بار انتخاب کنید. سقف ۱۲/۴۸ حذف شده است؛ حالت پیوسته تا توقف شما ادامه دارد. برای حفظ سرعت، ۴۰۰ ردیف آخر نمایش داده می‌شود. کشور GeoIP محل قطعی لبهٔ کلادفلر نیست.</span><span class="en">Check ranges and choose a total budget once. Continuous mode runs until stopped; the latest 400 rows are displayed. GeoIP is not physical anycast location.</span></p>
+<div class="range-list" id="cf-range-list"></div>
+<p class="hint"><span class="fa">پاسخ واقعی و نامزدهای تخمینی جدا هستند؛ خطا پینگ نیست و نامزد تخمینی خودکار به‌عنوان سالم اولویت نمی‌گیرد.</span><span class="en">Real responses and estimated candidates are separate; errors are not pings and candidates are never prioritized as healthy IPs.</span></p>
+<div class="actions"><button class="btn primary sm-btn" id="btn-scan-ranges" type="button"><svg class="ic ic-sm"><use href="#i-radar"></use></svg><span class="fa">نمونه‌گیری و بررسی نامزدها</span><span class="en">SAMPLE &amp; PROBE CANDIDATES</span></button></div>
+</div>
+<section class="relay-card"><p class="kicker"><svg class="ic"><use href="#i-radar"/></svg>RELAY DELAY · <span class="fa">مسیر مرورگر شما</span><span class="en">YOUR BROWSER ROUTE</span></p><p class="hint"><span class="fa">یک اتصال گرم‌کردن و پنج تلاش واقعی برای عبور HTTP 204 از تونل کاربر انتخاب‌شده؛ شامل برقراری WebSocket و رفت‌وبرگشت رله. این آزمون ICMP یا پینگ UDP نیست. VPN یا پراکسی مرورگر روی مسیر اثر می‌گذارد.</span><span class="en">One warm-up plus five real HTTP 204 tunnel attempts using the selected subscriber. Includes WebSocket setup and relay round-trip; not ICMP or UDP ping. Browser proxies/VPNs affect the route.</span></p><div class="workshop-grid"><div><label for="relay-target" class="fld-label"><span class="fa">آدرس‌های آزمون · هر خط IP یا دامنه</span><span class="en">Targets · one IP/domain per line</span></label><textarea id="relay-target" rows="2" dir="ltr" placeholder="Empty = current panel host"></textarea></div><div class="actions"><button class="btn primary" id="relay-run" type="button"><span class="fa">شروع Relay Test</span><span class="en">START RELAY TEST</span></button><button class="btn ghost" id="relay-from-list" type="button"><span class="fa">از فهرست IP من</span><span class="en">USE MY IP LIST</span></button><button class="btn ghost" id="relay-stop" hidden type="button"><span class="fa">توقف</span><span class="en">STOP</span></button></div></div><p class="hint"><span class="fa">این آزمون شناسهٔ اتصال کاربر را به مقصد انتخابی می‌فرستد؛ فقط مقصدهای مورد اعتماد خودتان را وارد کنید. برای IP خام، گواهی HTTPS باید برای همان IP معتبر باشد؛ مرورگر اجازهٔ جایگزین‌کردن نام TLS دامنه را نمی‌دهد. خطای TLS یا پاسخ غیر 204 پینگ موفق محسوب نمی‌شود. تست کامل IPهای دارای نام TLS دامنه را در کلاینت انجام دهید.</span><span class="en">This test sends subscriber credentials to your selected target; use only trusted endpoints. Literal IPs need a certificate valid for that IP; browsers cannot override the TLS hostname. TLS errors or non-204 replies are not successful pings. Domain-SNI/IP combinations need a native client.</span></p><div id="relay-results" class="relay-results" role="status" aria-live="polite"></div></section>
+<p class="hint" hidden="" id="scan-summary"></p>
+<div class="scan-grid" hidden="" id="scan-results"></div>
+</div>
+<div class="actions"><button id="save-cleanips" class="btn primary" type="button">ذخیرهٔ فهرست IP پنل</button></div></details></div>
     <!-- ─────────────────── TAB 2: SUBSCRIBERS ─────────────────── -->
     <div class="tab-pane" id="pane-users" hidden>
       <div class="stack">
@@ -1066,51 +1105,6 @@
 </p>
 </div>
 </div></div><div class="stack"><div class="card">
-<p class="kicker"><svg class="ic"><use href="#i-radar"></use></svg><span class="fa">رادار IP و دامنه · وضعیت زنده</span><span class="en">IP &amp; DOMAIN RESPONSE CHECK</span></p>
-<label class="fld-label" for="s-cleanips">
-<span class="fa">فهرست IP / دامنهٔ شما (هر خط یک مورد؛ کد تقریبی کشور برای نام نود: <code>172.67.73.163#US|MCI</code>)</span>
-<span class="en">YOUR IPs / DOMAINS (ONE PER LINE; APPROX. COUNTRY TAG: <code>172.67.73.163#US|MCI</code>)</span>
-</label>
-<textarea id="s-cleanips" style="min-height:120px"></textarea>
-<div class="actions" style="margin-top:10px">
-<button class="btn primary sm-btn" id="btn-scan-user-list" type="button">
-<svg class="ic ic-sm"><use href="#i-bolt"></use></svg>
-<span class="fa">اسکن لیستِ فعلیِ شما</span><span class="en">SCAN YOUR LISTED IPs</span>
-</button>
-<button class="btn ghost sm-btn" hidden="" id="btn-prune-clean" type="button">
-<svg class="ic ic-sm"><use href="#i-check"></use></svg>
-<span class="fa">اولویت‌بندی نامزدها (بدون حذف IP)</span><span class="en">PRIORITIZE CANDIDATES (KEEP IPs)</span>
-</button>
-<button class="btn ghost sm-btn" id="btn-scan-clean" type="button">
-<svg class="ic ic-sm"><use href="#i-radar"></use></svg>
-<span class="fa">رنج‌های رسمی کلادفلر</span><span class="en">OFFICIAL CF RANGES</span>
-</button>
-<button class="btn ghost sm-btn" id="btn-add-presets" type="button">
-<svg class="ic ic-sm"><use href="#i-plus"></use></svg>
-<span class="fa">افزودن منتخب‌ها</span><span class="en">ADD PRESETS</span>
-</button>
-</div>
-<div class="actions" style="margin-top:7px"><button class="btn ghost sm-btn" id="btn-country-list" type="button"><span class="fa">بازبینی کشور IPهای فهرست</span><span class="en">RECHECK LIST GEOIP</span></button><label class="chk"><input id="scan-geo" type="checkbox"/><span><span class="fa">برچسب کشور تقریبی (سرویس ثالث؛ اختیاری)</span><span class="en">Approximate GeoIP label (third party; optional)</span></span></label><button class="btn ghost sm-btn" hidden="" id="btn-scan-stop" type="button"><span class="fa">توقف اسکن</span><span class="en">STOP SCAN</span></button></div>
-<div class="scan-options"><label class="fld-label"><span class="fa">درخواست هم‌زمان</span><span class="en">CONCURRENCY</span><select id="scan-parallel"><option value="4">4 · آرام</option><option value="8" selected>8 · متعادل</option><option value="12">12 · سریع</option></select></label><label class="fld-label"><span class="fa">مهلت هر تلاش</span><span class="en">PER-ATTEMPT TIMEOUT</span><select id="scan-timeout"><option value="2500">2.5 s</option><option value="4000" selected>4 s</option><option value="7000">7 s</option></select></label><div class="hint"><span class="fa">رادار دوکاناله: تصویر + درخواست شبکه، سه نوبت و خودآزمایی. فقط پورت‌های TLS بررسی می‌شوند؛ ورودی پورت‌های دیگر در اسکن کنار گذاشته می‌شود.</span><span class="en">Dual-channel image/fetch radar, three rounds and control checks. Only TLS ports are scanned; other port entries are skipped.</span></div></div>
-<p class="hint"><span class="fa">گام ۱: نامزدهای شبکه را پیدا و اضافه کنید. گام ۲: با خروجی خودکار Xray، اتصال کانفیگ را در خود برنامه بررسی کنید. «واکنش» برآورد مرورگر است، نه تأیید اتصال.</span><span class="en">Find candidates, then use the automatic Xray profile to test config connectivity. Browser reaction time is an estimate, not connection proof.</span></p>
-<p class="hint" hidden id="scan-control"></p><p class="hint" hidden id="scan-calibration"></p>
-<div class="range-panel" hidden="" id="cf-ranges-panel">
-<div class="stat-strip">
-<strong class="fld-label" style="margin:0"><span class="fa">منبع: </span><span class="en">SOURCE: </span><a class="inline-link mono" href="https://api.cloudflare.com/client/v4/ips" rel="noopener noreferrer" target="_blank">Cloudflare Public IP API <svg class="ic ic-sm"><use href="#i-external"></use></svg></a></strong>
-<span class="mono sm" id="cf-ranges-total">—</span>
-</div>
-<div class="range-toolbar"><label class="fld-label"><span class="fa">حجم اسکن کل</span><span class="en">SCAN SIZE</span><select id="scan-budget"><option value="64" data-fa="64 · سریع" data-en="64 · Quick">64 · سریع</option><option value="256" selected data-fa="256 · متعادل" data-en="256 · Balanced">256 · متعادل</option><option value="1024" data-fa="1024 · عمیق" data-en="1024 · Deep">1024 · عمیق</option><option value="4096" data-fa="4096 · گسترده" data-en="4096 · Broad">4096 · گسترده</option><option value="continuous" data-fa="پیوسته · تا زدن توقف" data-en="Continuous · until stopped">پیوسته · تا زدن توقف</option></select></label><div class="actions"><button type="button" class="btn ghost sm-btn" id="ranges-all">همه</button><button type="button" class="btn ghost sm-btn" id="ranges-v4">IPv4</button><button type="button" class="btn ghost sm-btn" id="ranges-v6">IPv6</button><button type="button" class="btn ghost sm-btn" id="ranges-none">هیچ‌کدام</button></div></div>
-<p class="hint"><span class="fa">کشورِ نمایش‌داده‌شده، اطلاعات تقریبی IP ورودی است؛ نه کشور خروجی. اگر موقعیت تأیید نشود، فقط نام و IP اتصال نمایش داده می‌شود.</span><span class="en">Country is approximate connection-IP metadata, not exit location. If unavailable, only the name and IP are shown.</span></p>
-<p class="hint"><span class="fa">رنج‌ها را تیک بزنید و حجم را یک بار انتخاب کنید. سقف ۱۲/۴۸ حذف شده است؛ حالت پیوسته تا توقف شما ادامه دارد. برای حفظ سرعت، ۴۰۰ ردیف آخر نمایش داده می‌شود. کشور GeoIP محل قطعی لبهٔ کلادفلر نیست.</span><span class="en">Check ranges and choose a total budget once. Continuous mode runs until stopped; the latest 400 rows are displayed. GeoIP is not physical anycast location.</span></p>
-<div class="range-list" id="cf-range-list"></div>
-<p class="hint"><span class="fa">پاسخ واقعی و نامزدهای تخمینی جدا هستند؛ خطا پینگ نیست و نامزد تخمینی خودکار به‌عنوان سالم اولویت نمی‌گیرد.</span><span class="en">Real responses and estimated candidates are separate; errors are not pings and candidates are never prioritized as healthy IPs.</span></p>
-<div class="actions"><button class="btn primary sm-btn" id="btn-scan-ranges" type="button"><svg class="ic ic-sm"><use href="#i-radar"></use></svg><span class="fa">نمونه‌گیری و بررسی نامزدها</span><span class="en">SAMPLE &amp; PROBE CANDIDATES</span></button></div>
-</div>
-<section class="relay-card"><p class="kicker"><svg class="ic"><use href="#i-radar"/></svg>RELAY DELAY · <span class="fa">مسیر مرورگر شما</span><span class="en">YOUR BROWSER ROUTE</span></p><p class="hint"><span class="fa">یک اتصال گرم‌کردن و پنج تلاش واقعی برای عبور HTTP 204 از تونل کاربر انتخاب‌شده؛ شامل برقراری WebSocket و رفت‌وبرگشت رله. این آزمون ICMP یا پینگ UDP نیست. VPN یا پراکسی مرورگر روی مسیر اثر می‌گذارد.</span><span class="en">One warm-up plus five real HTTP 204 tunnel attempts using the selected subscriber. Includes WebSocket setup and relay round-trip; not ICMP or UDP ping. Browser proxies/VPNs affect the route.</span></p><div class="workshop-grid"><div><label for="relay-target" class="fld-label"><span class="fa">آدرس‌های آزمون · هر خط IP یا دامنه</span><span class="en">Targets · one IP/domain per line</span></label><textarea id="relay-target" rows="2" dir="ltr" placeholder="Empty = current panel host"></textarea></div><div class="actions"><button class="btn primary" id="relay-run" type="button"><span class="fa">شروع Relay Test</span><span class="en">START RELAY TEST</span></button><button class="btn ghost" id="relay-from-list" type="button"><span class="fa">از فهرست IP من</span><span class="en">USE MY IP LIST</span></button><button class="btn ghost" id="relay-stop" hidden type="button"><span class="fa">توقف</span><span class="en">STOP</span></button></div></div><p class="hint"><span class="fa">این آزمون شناسهٔ اتصال کاربر را به مقصد انتخابی می‌فرستد؛ فقط مقصدهای مورد اعتماد خودتان را وارد کنید. برای IP خام، گواهی HTTPS باید برای همان IP معتبر باشد؛ مرورگر اجازهٔ جایگزین‌کردن نام TLS دامنه را نمی‌دهد. خطای TLS یا پاسخ غیر 204 پینگ موفق محسوب نمی‌شود. تست کامل IPهای دارای نام TLS دامنه را در کلاینت انجام دهید.</span><span class="en">This test sends subscriber credentials to your selected target; use only trusted endpoints. Literal IPs need a certificate valid for that IP; browsers cannot override the TLS hostname. TLS errors or non-204 replies are not successful pings. Domain-SNI/IP combinations need a native client.</span></p><div id="relay-results" class="relay-results" role="status" aria-live="polite"></div></section>
-<p class="hint" hidden="" id="scan-summary"></p>
-<div class="scan-grid" hidden="" id="scan-results"></div>
-</div>
-<div class="card">
 <p class="kicker"><svg class="ic"><use href="#i-globe"></use></svg><span class="fa">خروجیِ ورکر: ProxyIP، NAT64 و پروکسی زنجیره‌ای</span><span class="en">OUTBOUND: PROXYIP, NAT64 &amp; CHAIN</span></p>
 <label class="fld-label" for="s-proxyips">
 <span class="fa">فهرست ProxyIP (برای باز شدن سایت‌های پشت کلادفلر مثل speedtest.net — هر خط <code>host</code> یا <code>host:port</code>)</span>

@@ -1,7 +1,7 @@
-// Shipped with the installed Worker, never read from a remote release description.
-export const INSTALLED_CHANGES={version:'2.6.0',items:[
- {fa:'کارگاه WARP: ساخت و ورود امن حساب، خروجی WireGuard و MASQUE با تنظیمات مرحله‌ای.',en:'WARP Workshop: account registration/import and guided WireGuard / MASQUE export.'},
- {fa:'Relay Delay از مرورگر شما: پاسخ واقعی تونل، نمونه‌های تکراری و خطاهای روشن.',en:'Browser Relay Delay: real tunnel replies, repeated samples and clear failures.'},
- {fa:'کارت‌های گرافیکی اشتراک و کشورها؛ نام اتصال بدون علامت‌های نامفهوم.',en:'Graphical subscription cards and country badges, without cryptic node labels.'},
- {fa:'نمایش خلاصهٔ تغییرات نصب‌شده پس از هر بروزرسانی، هم‌تم پنل.',en:'An in-theme summary of installed changes after each update.'}
+// Release notes are shipped with the installed Worker, not fetched from a remote description.
+export const INSTALLED_CHANGES={version:'2.6.1',items:[
+ {fa:'ثبت رسمی MASQUE اصلاح شد: پذیرش کلید PEM و مسیر جایگزین رسمی Cloudflare؛ هر دو در آزمون زنده ثبت شدند.',en:'Fixed MASQUE PEM peer keys; both official Cloudflare registration hosts passed live enrollment tests.'},
+ {fa:'کارگاه مرتب‌تر: آیکن اختصاصی، تنظیمات جمع‌شونده، متن قابل ویرایش، کپی و دانلود همان متن.',en:'Cleaner workshop with a theme-native cloud mark, progressive settings and editable copy/download output.'},
+ {fa:'AmneziaWG: بسته‌های اولیه و CPS سازگار با WARP؛ اندازه و تأخیر Fragment برای MASQUE H2 قابل تنظیم است.',en:'WARP-compatible AmneziaWG junk/CPS; adjustable MASQUE H2 fragment size and delay.'},
+ {fa:'ابزار محلی Node.js برای آزمون رمزنگاری‌شدهٔ مقصد WireGuard از اینترنت خودتان؛ ورود نتیجه و اعمال مقصد در پنل.',en:'Local Node.js authenticated WireGuard handshake probe, with result import and endpoint apply in the panel.'}
 ]};

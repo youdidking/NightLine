@@ -887,3 +887,12 @@ html[data-lang="fa"] .colophon .fa{font-family:var(--fa-font);letter-spacing:0;f
 @media(prefers-reduced-motion:reduce){.sub-ticket-grid>.btn[data-format]:hover{transform:none}}
 .warp-workshop a{color:inherit;text-underline-offset:3px}.relay-result.state-candidate{border-inline-start:3px solid var(--red);padding-inline-start:10px}
 .relay-metrics{display:flex;flex-wrap:wrap;gap:5px 12px;align-items:center}.relay-metrics>span{display:inline-flex;gap:5px;align-items:baseline}.relay-metrics bdi{font-family:var(--en-font);font-size:.95em}
+
+/* 2.6.1: progressively disclosed workshop controls, theme-native Cloudflare mark. */
+.cloudflare-mark { width:2rem; height:1.4rem; color:var(--accent, currentColor); }
+#warp-workshop > .workshop-advanced, #ww-settings > .workshop-advanced { margin-block:14px; padding:12px; border:1px solid var(--line, #7775); border-radius:10px; }
+#warp-workshop summary { cursor:pointer; line-height:1.8; }
+#warp-workshop .workshop-grid { margin-block:12px; }
+#ww-preview { display:block; width:100%; min-height:260px; resize:vertical; box-sizing:border-box; white-space:pre; overflow:auto; font-family:monospace; font-size:12px; line-height:1.7; }
+#ww-scan-results { width:100%; margin-block:12px; direction:ltr; }
+#ww-fragment-tune[hidden], #ww-awg-box[hidden], #ww-scan-box[hidden] { display:none; }

@@ -31,7 +31,7 @@
       var extra={};if(res.type==='opaque'||res.type==='opaqueredirect')return {ok:false,ms:Math.max(1,Math.round(performance.now()-start)),reason:'opaque-response'};
       if(options.check === 'health') {
         if(!res.ok) throw Error('http');
-        var h=await res.json(); if(h.ok!==true || h.version!=='2.6.2')throw Error('health');
+        var h=await res.json(); if(h.ok!==true || h.version!=='2.6.3')throw Error('health');
       } else if(options.check === 'dns') {
         if(!res.ok)throw Error('http');
         var d=await res.json();if(d.Status!==0 || !Array.isArray(d.Answer) || !d.Answer.some(function(a){return a.type===1;}))throw Error('dns');

@@ -1,0 +1,4 @@
+/* Maintainer-only, offline detached signing. Never upload your private key. */
+import fs from 'node:fs';import {createPrivateKey,createPublicKey,sign,createHash} from 'node:crypto';
+const [file,keyfile]=process.argv.slice(2);if(!file||!keyfile)throw Error('Usage: node tools/sign-release.mjs worker-single-file.js /secure/path/ed25519-private.pem');
+const key=createPrivateKey(fs.readFileSync(keyfile));if(key.asymmetricKeyType!=='ed25519')throw Error('Ed25519 private key required');const bytes=fs.readFileSync(file),pub=createPublicKey(key).export({type:'spki',format:'der'}).subarray(-32);fs.writeFileSync(file+'.sha256',createHash('sha256').update(bytes).digest('hex')+'  '+file.split('/').pop()+'\n');fs.writeFileSync(file+'.sig',sign(null,bytes,key).toString('base64')+'\n');console.log('Detached files written without changing artifact. Pin this RAW Base64 public key via a trusted channel as NL_RELEASE_PUBLIC_KEY:\n'+pub.toString('base64'));

@@ -1,3 +1,6 @@
+import {PANEL_VERSION} from './version.js';
+import {mergeCommit} from './state-commit.js';
+import {hasCoordinator,coordinatorCall} from './coordinator.js';
 /**
  * NIGHTLINE — State & KV Storage Layer (CPU-optimized, locked NIGHTLINE identity).
  */
@@ -14,13 +17,12 @@ import {
 } from './crypto.js';
 
 export const PANEL_BRAND = 'NIGHTLINE';
-export const PANEL_VERSION = '2.6.2';
+export {PANEL_VERSION} from './version.js';
 export const GITHUB_REPO = 'youdidking/NightLine';
 export const GITHUB_REPO_URL = 'https://github.com/youdidking/NightLine';
 export const STATE_KEY = 'nl:state:v2';
 const CACHE_TTL_MS = 15_000;
-const USAGE_FLUSH_INTERVAL_MS = 45_000;
-const USAGE_FLUSH_BYTES = 512 * 1024;
+const USAGE_FLUSH_INTERVAL_MS = 300_000;
 const MAX_MAP_SIZE = 1000;
 
 export const DEFAULT_PROXY_IPS = [
@@ -106,6 +108,17 @@ let pendingBytesTotal = 0;
 let lastUsageFlushAt = 0;
 
 const loginAttempts = new Map();
+let usageActor='';let usageSeq=0,saveTail=Promise.resolve(),memCacheBinding=null;
+const bases=new WeakMap();const diagnostics={writes:0,failures:0,lastError:'',lastWriteAt:0};
+function documentOf(s){return structuredClone({version:3,revision:s.revision||0,configRevision:s.configRevision||0,auth:s.auth,cfApi:s.cfApi||{},settings:s.settings||{},users:s.users||[],logs:s.logs||[],usageHistory:s.usageHistory||{},resetUsageHistory:s.resetUsageHistory===true});}
+function exposed(s){const clone=structuredClone(s);bases.set(clone,documentOf(s));return clone;}
+export function storageDiagnostics(env){
+ const central=hasCoordinator(env),day=new Date().toISOString().slice(0,10),count=memCache?.writeStats?.day===day?Number(memCache.writeStats.count)||0:0;
+ return {mode:central?'central-sqlite':'kv-best-effort',...diagnostics,pendingBytes:pendingBytesTotal,pendingUsers:pendingUsage.size,globalConsistency:central,dailyWriteBudget:central?null:1000,dailyStateWrites:count,lastFlushAt:memCache?.writeStats?.lastFlushAt||diagnostics.lastWriteAt||0,flushIntervalMs:central?0:Math.max(Number(env?.NL_FLUSH_MS)||USAGE_FLUSH_INTERVAL_MS,count>=900?600000:1000),pendingEvents:[...pendingUsage.values()].reduce((n,r)=>n+(r.events?.length||0),0),budgetWarning:!central&&count>=900};
+}
+function pendingSnapshot(){return [...pendingUsage.values()].flatMap(r=>r.events||[]).map(e=>({...e}));}
+function acknowledge(events){const ack=new Set(events.map(e=>e.actor+':'+e.seq));for(const [id,r]of pendingUsage){r.events=(r.events||[]).filter(e=>!ack.has(e.actor+':'+e.seq));if(!r.events.length){pendingUsage.delete(id);continue;}r.up=r.events.reduce((n,e)=>n+e.up,0);r.down=r.events.reduce((n,e)=>n+e.down,0);r.conns=r.events.reduce((n,e)=>n+e.conns,0);r.firstSeen=Math.min(...r.events.map(e=>e.at));r.lastSeen=Math.max(...r.events.map(e=>e.at));}pendingBytesTotal=[...pendingUsage.values()].reduce((n,r)=>n+r.up+r.down,0);}
+
 
 export function findKV(env) {
   try {
@@ -277,6 +290,7 @@ export function sanitizeSettings(patch = {}, current = DEFAULT_SETTINGS) {
       .slice(0, 120);
   }
 
+  next.enableECH=false; // No operational ECH implementation is advertised.
   return next;
 }
 
@@ -442,17 +456,19 @@ export async function loadRuntimeState(env, forceRefresh = false) {
     return buildEnvFallbackState(env, null);
   }
 
+  const binding=env?.NL_COORDINATOR||kvInfo.binding;
+  if(memCacheBinding!==binding){memCache=null;memCacheAt=0;memCacheBinding=binding;}
   const now = Date.now();
   if (!forceRefresh && memCache && now - memCacheAt < CACHE_TTL_MS) {
-    return memCache;
+    return Object.assign(exposed(memCache),{storage:storageDiagnostics(env)});
   }
 
   let raw = null;
   try {
-    const rawText = await kvInfo.binding.get(STATE_KEY, 'text');
-    raw = safeJsonParse(rawText, null);
-  } catch {
-    if (memCache) return memCache;
+    if(hasCoordinator(env)){const response=await coordinatorCall(env,'/read',{});raw=response.document;if(!raw){const seed=safeJsonParse(await kvInfo.binding.get(STATE_KEY,'text'),null);if(seed?.auth)raw=(await coordinatorCall(env,'/read',{seed})).document;}}else raw=safeJsonParse(await kvInfo.binding.get(STATE_KEY,'text'),null);
+  } catch(err) {
+    if(hasCoordinator(env))throw err;
+    if (memCache) return exposed(memCache);
     return buildEnvFallbackState(env, kvInfo);
   }
 
@@ -460,7 +476,7 @@ export async function loadRuntimeState(env, forceRefresh = false) {
     const fallback = buildEnvFallbackState(env, kvInfo);
     memCache = fallback;
     memCacheAt = now;
-    return fallback;
+    return exposed(fallback);
   }
 
   const rawSettings = raw.settings && typeof raw.settings === 'object' ? { ...raw.settings } : {};
@@ -492,6 +508,9 @@ export async function loadRuntimeState(env, forceRefresh = false) {
 
   const state = {
     mode: 'kv',
+    revision: Number(raw.revision)||0,
+    configRevision: Number(raw.configRevision)||0,
+    usageHistory:raw.usageHistory||{},writeStats:raw.writeStats||{},
     kvBound: true,
     kvName: kvInfo.name,
     initialized: true,
@@ -505,7 +524,7 @@ export async function loadRuntimeState(env, forceRefresh = false) {
 
   memCache = state;
   memCacheAt = now;
-  return state;
+  return Object.assign(exposed(state),{storage:storageDiagnostics(env)});
 }
 
 export function clearPendingUsage(userId) {
@@ -517,68 +536,15 @@ export function clearPendingUsage(userId) {
   }
 }
 
-export async function saveRuntimeState(env, nextState) {
-  const kvInfo = findKV(env);
-  if (!kvInfo) throw new Error('فضای ذخیره‌سازی KV به ورکر متصل نیست (Settings → Bindings).');
-
-  const mergedUsers = (nextState?.users || []).map((u) => {
-    const norm = normalizeUser(u);
-    const pend = pendingUsage.get(norm.id);
-    if (pend) {
-      norm.usedUpBytes += pend.up;
-      norm.usedDownBytes += pend.down;
-      norm.connections += pend.conns;
-      if (!norm.firstConnectedAt && pend.firstSeen) norm.firstConnectedAt = pend.firstSeen;
-      if (pend.lastSeen > norm.lastSeenAt) norm.lastSeenAt = pend.lastSeen;
-      pendingUsage.delete(norm.id);
-    }
-    return norm;
-  });
-  pendingBytesTotal = 0;
-
-  const rawCf = nextState?.cfApi && typeof nextState.cfApi === 'object' ? nextState.cfApi : {};
-  const cfApiDoc = {
-    token: String(rawCf.token || '').trim(),
-    accountId: String(rawCf.accountId || '').trim(),
-    accountName: String(rawCf.accountName || '').trim(),
-    scriptName: String(rawCf.scriptName || '').trim(),
-    dailyLimit: Math.max(1000, Number(rawCf.dailyLimit) || 100000),
-    canEditWorkers: Boolean(rawCf.canEditWorkers),
-    updatedAt: Number(rawCf.updatedAt) || 0,
-  };
-
-  const doc = {
-    version: 3,
-    updatedAt: Date.now(),
-    auth: nextState.auth,
-    cfApi: cfApiDoc,
-    settings: sanitizeSettings(nextState.settings || {}, DEFAULT_SETTINGS),
-    users: mergedUsers,
-    logs: Array.isArray(nextState.logs) ? nextState.logs.slice(0, 40) : [],
-  };
-
-  try {
-    await kvInfo.binding.put(STATE_KEY, JSON.stringify(doc));
-  } catch (err) {
-    const msg = err && err.message ? err.message : String(err);
-    throw new Error(`ذخیره‌سازی در KV ناموفق بود (احتمال پر شدن سقف نوشتن روزانه): ${msg}`);
-  }
-
-  const hydrated = {
-    mode: 'kv',
-    kvBound: true,
-    kvName: kvInfo.name,
-    initialized: true,
-    envUuid: null,
-    auth: doc.auth,
-    cfApi: doc.cfApi,
-    settings: doc.settings,
-    users: doc.users,
-    logs: doc.logs,
-  };
-  memCache = hydrated;
-  memCacheAt = Date.now();
-  return hydrated;
+export async function saveRuntimeState(env,nextState){
+ const work=async()=>{const kvInfo=findKV(env);if(!kvInfo)throw Error('فضای KV متصل نیست.');const events=pendingSnapshot(),wanted=documentOf(nextState);wanted.users=wanted.users.map(u=>normalizeUser(u));wanted.settings=sanitizeSettings(wanted.settings,DEFAULT_SETTINGS);let doc;
+ try{
+  if(hasCoordinator(env)){doc=(await coordinatorCall(env,'/commit',{base:bases.get(nextState)||null,wanted,events})).document;}
+  else{const current=safeJsonParse(await kvInfo.binding.get(STATE_KEY,'text'),null);doc=mergeCommit(current,bases.get(nextState)||null,wanted,events);await kvInfo.binding.put(STATE_KEY,JSON.stringify(doc));}
+  acknowledge(events);diagnostics.writes++;diagnostics.lastWriteAt=Date.now();diagnostics.lastError='';
+ }catch(err){diagnostics.failures++;diagnostics.lastError=String(err.message||err).slice(0,240);memCacheAt=0;throw err;}
+ const hydrated={mode:'kv',usageHistory:doc.usageHistory||{},writeStats:doc.writeStats||{},revision:doc.revision,configRevision:doc.configRevision,kvBound:true,kvName:kvInfo.name,initialized:true,envUuid:null,auth:doc.auth,cfApi:doc.cfApi,settings:doc.settings,users:doc.users,logs:doc.logs};memCache=hydrated;memCacheBinding=env.NL_COORDINATOR||kvInfo.binding;memCacheAt=Date.now();return Object.assign(exposed(hydrated),{storage:storageDiagnostics(env)});
+ };const result=saveTail.then(work,work);saveTail=result.catch(()=>{});return result;
 }
 
 export async function initializePanelState(env, { password, firstUserName, preferredUuid, settings: initialOverrides } = {}) {
@@ -627,7 +593,7 @@ export function recordTraffic(env, ctx, user, upBytes, downBytes) {
     if (!user || !user.id) return;
     if (pendingUsage.size >= MAX_MAP_SIZE && !pendingUsage.has(user.id)) {
       const oldestKey = pendingUsage.keys().next().value;
-      if (oldestKey) pendingUsage.delete(oldestKey);
+      if (oldestKey) { diagnostics.lastError='Pending usage buffer full; refusing a new counter.'; return; }
     }
 
     const now = Date.now();
@@ -637,9 +603,12 @@ export function recordTraffic(env, ctx, user, upBytes, downBytes) {
       conns: 0,
       firstSeen: now,
       lastSeen: now,
+      events: [],
     };
     const safeUp = Math.max(0, Number(upBytes) || 0);
     const safeDown = Math.max(0, Number(downBytes) || 0);
+    if(!usageActor)usageActor=crypto.randomUUID();
+    prev.events=prev.events||[];prev.events.push({actor:usageActor,seq:++usageSeq,userId:user.id,up:safeUp,down:safeDown,conns:1,at:now});
     prev.up += safeUp;
     prev.down += safeDown;
     prev.conns += 1;
@@ -650,10 +619,8 @@ export function recordTraffic(env, ctx, user, upBytes, downBytes) {
     const kvInfo = findKV(env);
     if (!kvInfo || !memCache || !memCache.initialized) return;
 
-    const isFirstEverConn = !user.firstConnectedAt;
-    const shouldFlush =
-      isFirstEverConn ||
-      (pendingBytesTotal >= USAGE_FLUSH_BYTES && now - lastUsageFlushAt >= USAGE_FLUSH_INTERVAL_MS);
+    const interval=storageDiagnostics(env).flushIntervalMs;
+    const shouldFlush=hasCoordinator(env)||now-lastUsageFlushAt>=interval;
 
     if (shouldFlush && ctx && typeof ctx.waitUntil === 'function') {
       lastUsageFlushAt = now;

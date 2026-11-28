@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import {createHash} from 'node:crypto';
 const officialWorker=fs.readFileSync('worker-single-file.js');
-const officialRelease={tag_name:'2.6.2',assets:[{name:'worker-single-file.js',browser_download_url:'https://github.com/youdidking/NightLine/releases/download/2.6.2/worker-single-file.js',size:officialWorker.length,digest:'sha256:'+createHash('sha256').update(officialWorker).digest('hex')}]};
+const officialRelease={tag_name:'2.6.3',assets:[{name:'worker-single-file.js',browser_download_url:'https://github.com/youdidking/NightLine/releases/download/2.6.3/worker-single-file.js',size:officialWorker.length,digest:'sha256:'+createHash('sha256').update(officialWorker).digest('hex')}]};
 import { build } from 'esbuild';
 import { sanitizeSettings, DEFAULT_SETTINGS } from './src/storage.js';
 import installer, { TOKEN_TEMPLATE } from './src/installer.js';
@@ -50,7 +50,7 @@ globalThis.fetch=async(url,opts={})=>{
  const host=new URL(url).hostname;
  if(new URL(url).hostname==='raw.githubusercontent.com'){assert(!opts.headers.authorization);return new Response(failDownload?Buffer.from(officialWorker).fill(32):officialWorker);}
  if(host==='api.github.com'||host==='github.com'){assert(!opts.headers.authorization,'Never send CF credentials to GitHub');return host==='api.github.com'?Response.json(officialRelease):new Response(failDownload?Buffer.from(officialWorker).fill(32):officialWorker);}
- if(host.endsWith('.workers.dev'))return Response.json({ok:true,version:'2.6.2',initialized:true});
+ if(host.endsWith('.workers.dev'))return Response.json({ok:true,version:'2.6.3',initialized:true});
  const path=new URL(url).pathname.replace('/client/v4','');calls.push([opts.method||'GET',path]);
  assert.equal(opts.headers.authorization,'Bearer '+token);
  let result={};
@@ -65,7 +65,7 @@ globalThis.fetch=async(url,opts={})=>{
 const installRequest=()=>new Request('https://installer.example/install',{method:'POST',headers:{origin:'https://installer.example','content-type':'application/json'},body:JSON.stringify({token})});
 try{
  const result=await (await installer.fetch(installRequest())).json();
- assert.equal(result.ok,true,result.error);assert.equal(result.version,'2.6.2');assert.equal(result.verified,true);
+ assert.equal(result.ok,true,result.error);assert.equal(result.version,'2.6.3');assert.equal(result.verified,true);
  assert.match(result.url,/^https:\/\/nightline-free-[a-f0-9]{12}\.existing-account\.workers.dev\/panel$/);
  assert.equal(result.password.length,48);
  assert(!JSON.stringify(persisted).includes(token));assert(persisted.auth.hash||persisted.auth.passwordHash);

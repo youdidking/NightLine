@@ -1,0 +1,42 @@
+{
+  "edition": "2.6.3-revised",
+  "panelHtml": {
+    "rawBytes": 325703,
+    "gzipBytes": 151804
+  },
+  "version": "2.6.3",
+  "assets": {
+    "/assets/JetBrainsMono-Regular.woff2.5ffd7830cce5bd20": {
+      "rawBytes": 19556,
+      "gzipBytes": 19584
+    },
+    "/assets/JetBrainsMono-Medium.woff2.f2e2a5798a3d2f91": {
+      "rawBytes": 20184,
+      "gzipBytes": 20212
+    },
+    "/assets/JetBrainsMono-Bold.woff2.9866d6bce0758d81": {
+      "rawBytes": 20232,
+      "gzipBytes": 20260
+    },
+    "/assets/Vazirmatn-Regular.woff2.8160bf5657877db8": {
+      "rawBytes": 23056,
+      "gzipBytes": 23084
+    },
+    "/assets/Vazirmatn-Medium.woff2.3bf60fb2247acd3a": {
+      "rawBytes": 23372,
+      "gzipBytes": 23400
+    },
+    "/assets/Vazirmatn-Bold.woff2.e779e56fdd560ee4": {
+      "rawBytes": 23324,
+      "gzipBytes": 23352
+    },
+    "/assets/panel.css.3ee5f910161eb6e0": {
+      "rawBytes": 51573,
+      "gzipBytes": 10929
+    },
+    "/assets/panel.js.e6b926293204c4c4": {
+      "rawBytes": 206830,
+      "gzipBytes": 62171
+    }
+  }
+}

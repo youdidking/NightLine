@@ -1,4 +1,4 @@
-/* NIGHTLINE v2.6.2 — Complete Client Application (Vanilla ES6, zero external deps, zero emojis) */
+/* NIGHTLINE v2.6.3 — Complete Client Application (Vanilla ES6, zero external deps, zero emojis) */
 (function () {
   'use strict';
 
@@ -179,6 +179,7 @@
       if (!el) return;
       el.textContent = tr(fa, en);
       el.hidden = false;
+      el.setAttribute('role','status');el.setAttribute('aria-live','polite');
       clearTimeout(toastTimer);
       toastTimer = setTimeout(function () { el.hidden = true; }, 2800);
     } catch (e) {}
@@ -1045,7 +1046,7 @@
       effectiveExpiresAt: 0, remainingDays: 15, startOnFirstUse: true, status: 'active'
     };
     demoStore = {
-      version: '2.6.2',
+      version: '2.6.3',
       mode: 'admin', kvBound: true, kvName: 'PREVIEW_KV', initialized: true, authenticated: true,
       edge: 'FRA', host: 'nightline.example.workers.dev',
       cfIntegration: {
@@ -1083,7 +1084,7 @@
       },
       users: [u1, u2],
       logs: [
-        { ts: Date.now() - 120000, event: 'setup', detail: 'پیش‌نمایش تعاملی پنل آماده است (V2.6.2)' },
+        { ts: Date.now() - 120000, event: 'setup', detail: 'پیش‌نمایش تعاملی پنل آماده است (V2.6.3)' },
         { ts: Date.now() - 30000, event: 'settings', detail: 'پروتکل‌های VLESS + Trojan + Telegram Web Proxy فعال شد' }
       ]
     };
@@ -1190,11 +1191,11 @@
           ok: true,
           repo: OFFICIAL_GITHUB_REPO,
           repoUrl: OFFICIAL_GITHUB_URL,
-          currentVersion: '2.6.2',
-          latestVersion: '2.6.2',
+          currentVersion: '2.6.3',
+          latestVersion: '2.6.3',
           updateAvailable: false,
           releaseUrl: OFFICIAL_GITHUB_URL + '/releases',
-          releaseNotes: 'NIGHTLINE v2.6.2 — Latest release installed.',
+          releaseNotes: 'NIGHTLINE v2.6.3 — Latest release installed.',
           cfConfigured: ds.cfIntegration.hasToken,
           canEditWorkers: true,
           scriptName: ds.cfIntegration.scriptName || 'nightline'
@@ -1204,8 +1205,8 @@
         return {
           ok: true,
           updated: true,
-          previousVersion: '2.6.2',
-          targetVersion: '2.6.2',
+          previousVersion: '2.6.3',
+          targetVersion: '2.6.3',
           scriptName: (body && body.scriptName) || 'nightline',
           reloadAfterMs: 1200
         };
@@ -1267,6 +1268,7 @@
       credentials: 'same-origin',
       headers: { accept: 'application/json', 'x-nightline': '1' }
     };
+    if(STATE.configRevision!==undefined&&['PUT','POST','DELETE'].indexOf(method)!==-1)opts.headers['if-match']=String(STATE.configRevision);
     if (ctrl) opts.signal = ctrl.signal;
     if (body !== undefined) {
       opts.headers['content-type'] = 'application/json';
@@ -1295,6 +1297,7 @@
     if (!res.ok || data.ok === false) {
       throw new Error(data.error || ('HTTP ' + res.status));
     }
+    if(data.configRevision!==undefined)STATE.configRevision=data.configRevision;
     return data;
   }
 
@@ -1311,6 +1314,9 @@
     };
     var resolvedMode = data.mode || stateToMode[data.state] || 'stateless';
     STATE.mode = resolvedMode;
+    if(data.configRevision!==undefined)STATE.configRevision=data.configRevision;
+    if($('diag-storage'))$('diag-storage').textContent=data.storage?(data.storage.mode+' · state writes ~'+data.storage.dailyStateWrites+(data.storage.dailyWriteBudget?'/1000':' (central)')+' · pending '+data.storage.pendingEvents+' events / '+data.storage.pendingBytes+' B · last flush '+(data.storage.lastFlushAt?new Date(data.storage.lastFlushAt).toLocaleString():'—')+' · interval '+Math.round(data.storage.flushIntervalMs/1000)+'s · local errors '+data.storage.failures+(data.storage.budgetWarning?' · WARNING: KV write budget':'')+' · سهمیه کل حساب نیست'):'—';
+    if(data.usageHistory){STATE.usageHistory=data.usageHistory;renderUsageHistory();}
     STATE.isDemo = isSandboxPreview;
     STATE.host = data.host || (data.cf && data.cf.host) || location.host || 'nightline.workers.dev';
     if (data.edge && data.edge !== 'CF-GLOBAL') STATE.edge = data.edge;
@@ -1336,6 +1342,7 @@
     }
 
     if (resolvedMode === 'admin') {
+      $('diag-mode').textContent=data.storage?.mode||'KV';$('diag-kv').textContent='BOUND';$('diag-edge').textContent=STATE.edge;
       // Ensure Smart Advisor card lives inside Tab 5 when entering Admin
       var advCard = $('advisor-master-card');
       if (advCard && $('pane-advisor') && advCard.parentElement !== $('pane-advisor')) {
@@ -2487,9 +2494,10 @@
   setInterval(function(){if(STATE.mode==='admin'&&!document.hidden)checkGitHubUpdates(true);},900000);
   document.addEventListener('visibilitychange',function(){if(!document.hidden&&STATE.mode==='admin'&&Date.now()-ghLastCheck>900000)checkGitHubUpdates(true);});
   function syncGhUpdaterUI(ver) {
-    var curV = ver || (STATE.ghInfo && STATE.ghInfo.currentVersion) || '2.6.2';
+    var curV = ver || (STATE.ghInfo && STATE.ghInfo.currentVersion) || '2.6.3';
     if ($('gh-mini-ver')) $('gh-mini-ver').textContent = 'V' + curV;
     if ($('gh-cur-ver')) $('gh-cur-ver').textContent = 'V' + curV;
+    if(STATE.ghInfo&&STATE.ghInfo.repo){var link=document.querySelector('#gh-modal a.inline-link');link.href='https://github.com/'+STATE.ghInfo.repo;link.textContent='github.com/'+STATE.ghInfo.repo;}
     if($('btn-gh-updater')){$('btn-gh-updater').classList.toggle('update-ready',!!(STATE.ghInfo&&STATE.ghInfo.updateAvailable));$('btn-gh-updater').setAttribute('aria-label',STATE.ghInfo&&STATE.ghInfo.updateAvailable?tr('نسخه جدید آماده است','New version available'):tr('بررسی بروزرسانی','Check for updates'));}
     if ($('gh-upd-dot')) {
       $('gh-upd-dot').hidden = !(STATE.ghInfo && STATE.ghInfo.updateAvailable);
@@ -2628,7 +2636,10 @@
         true
       );
       try {
-        var res = await api('/api/update/apply', 'POST', { scriptName: targetScript });
+        var payload={scriptName:targetScript,force:$('gh-force').checked};
+        var res = await api('/api/update/apply', 'POST', payload);
+        if(res.needsConfirmation){$('gh-hash').textContent='SHA-256 '+res.sha256;if(!confirm('مخزن: '+res.repo+'\nSHA-256: '+res.sha256+'\nاین هش امضای انتشار نیست. این فایل را تأیید می‌کنید؟'))return;payload.approvedHash=res.sha256;res=await api('/api/update/apply','POST',payload);}
+        if(!res.updated)throw Error('Deployment not confirmed');
         showGhMessage(
           tr(
             'هستهٔ پنل با موفقیت به نسخهٔ V' + res.targetVersion + ' بروزرسانی شد! در حال بارگذاری مجدد…',
@@ -2655,34 +2666,43 @@
     }
   });
 
+  $('gh-rollback').onclick=async function(){if(!confirm('نسخهٔ پشتیبان قبلی جایگزین شود؟ برای DO فقط نسخهٔ سازگار را بازیابی کنید.'))return;this.disabled=true;try{var r=await api('/api/update/apply','POST',{action:'rollback',scriptName:$('gh-inp-script').value});showGhMessage('Rollback accepted · '+r.targetVersion,true);}catch(e){showGhMessage(e.message,false);}finally{this.disabled=false;}};
   /* 2.6: independent WARP workshop, graphical subscriptions, installed edition notes. */
   var releasePending=null,releaseSeenMemory='',releaseFocus=null;
-  function openInstalledNotes(){if(!releasePending)return;var m=$('release-modal');releaseFocus=document.activeElement;$('release-version').textContent='V'+releasePending.version;$('release-items').innerHTML='';releasePending.items.slice(0,8).forEach(function(note){var li=document.createElement('li');li.textContent=tr(note.fa||'',note.en||note.fa||'');$('release-items').appendChild(li);});m.hidden=false;$('release-close').focus();}
-  function scheduleReleaseNotice(version,notes){if(!notes||notes.version!==version||!Array.isArray(notes.items))return;releasePending=notes;var key='installed.seen.'+location.host;if(LS.get(key)===version||releaseSeenMemory===version)return;function ready(){if(releaseSeenMemory===version||LS.get(key)===version)return;if(!freeModal||freeModal.hidden){if(STATE.mode==='admin')openInstalledNotes();}}setTimeout(ready,300);if(freeCloseBtn&&!freeCloseBtn.dataset.editionBound){freeCloseBtn.dataset.editionBound='1';freeCloseBtn.addEventListener('click',ready);}}
-  function closeInstalledNotes(){if(!releasePending)return;$('release-modal').hidden=true;releaseSeenMemory=releasePending.version;LS.set('installed.seen.'+location.host,releasePending.version);if(releaseFocus&&document.contains(releaseFocus))releaseFocus.focus();}
+  function openInstalledNotes(){if(!releasePending)return;var m=$('release-modal');releaseFocus=document.activeElement;$('release-version').textContent='V'+releasePending.version+(releasePending.edition?' · revised':'');$('release-items').innerHTML='';releasePending.items.slice(0,8).forEach(function(note){var li=document.createElement('li');li.textContent=tr(note.fa||'',note.en||note.fa||'');$('release-items').appendChild(li);});m.hidden=false;$('release-close').focus();}
+  function scheduleReleaseNotice(version,notes){if(!notes||notes.version!==version||!Array.isArray(notes.items))return;releasePending=notes;var edition=notes.edition||version,key='installed.seen.'+location.host;if(LS.get(key)===edition||releaseSeenMemory===edition)return;function ready(){if(releaseSeenMemory===edition||LS.get(key)===edition)return;if(!freeModal||freeModal.hidden){if(STATE.mode==='admin')openInstalledNotes();}}setTimeout(ready,300);if(freeCloseBtn&&!freeCloseBtn.dataset.editionBound){freeCloseBtn.dataset.editionBound='1';freeCloseBtn.addEventListener('click',ready);}}
+  function closeInstalledNotes(){if(!releasePending)return;$('release-modal').hidden=true;releaseSeenMemory=releasePending.edition||releasePending.version;LS.set('installed.seen.'+location.host,releaseSeenMemory);if(releaseFocus&&document.contains(releaseFocus))releaseFocus.focus();}
   $('release-close').onclick=closeInstalledNotes;
   $('release-modal').addEventListener('keydown',function(e){if(e.key==='Escape'){e.preventDefault();closeInstalledNotes();}else if(e.key==='Tab'){e.preventDefault();$('release-close').focus();}});
   function renderSubscriptionTicket(){var box=$('subscription-ticket'),u=getSelectedUser();if(!box||!u)return;box.innerHTML='';var top=document.createElement('div');top.className='ticket-heading';var brand=document.createElement('span');brand.className='mono';brand.textContent='NIGHTLINE / FREE';var name=document.createElement('strong');name.textContent=u.name;top.append(brand,name);var badges=document.createElement('div');badges.className='ticket-badges';var unique={};(STATE.currentNodes||[]).forEach(function(n){if(!n.countryCode||unique[n.countryCode])return;unique[n.countryCode]=true;var b=document.createElement('span');b.className='badge';b.textContent=String.fromCodePoint.apply(String,n.countryCode.split('').map(function(c){return 0x1f1e6+c.charCodeAt(0)-65;}))+' '+(COUNTRY_NAMES[n.countryCode]?tr(COUNTRY_NAMES[n.countryCode][0],COUNTRY_NAMES[n.countryCode][1]):n.countryCode);b.title=tr('موقعیت تقریبی IP ورودی · ','Approximate connection-IP location · ')+(n.countryConfidence==='manual'?tr('برچسب دستی','manual label'):n.countryConfidence==='single-source'?tr('یک منبع','one source'):tr('منابع هم‌نظر','agreeing sources'));if(badges.children.length<6)badges.appendChild(b);});if(!badges.children.length){var neutral=document.createElement('span');neutral.className='mono sm';neutral.textContent=tr('لینک اختصاصی شما','YOUR PRIVATE PROFILE');badges.appendChild(neutral);}var replay=document.createElement('button');replay.type='button';replay.id='btn-release-notes';replay.className='btn ghost sm-btn';replay.textContent=tr('تازه‌های این نسخه','EDITION NOTES');replay.onclick=openInstalledNotes;box.append(top,badges,replay);}
+  function renderUsageHistory(){var chart=$('usage-history-chart');if(!chart)return;chart.innerHTML='';var n=Number($('usage-history-period').value),history=STATE.usageHistory||{},days=[],max=1,total=0,known=0;for(var i=n-1;i>=0;i--){var day=new Date(Date.now()-i*86400000).toISOString().slice(0,10),row=history[day],bytes=row?row.up+row.down:null;days.push({day:day,bytes:bytes});if(bytes!==null){max=Math.max(max,bytes);total+=bytes;known++;}}days.forEach(function(r){var bar=document.createElement('div');bar.style.cssText='flex:1;min-width:0;border:1px solid currentColor;background:currentColor;opacity:'+(r.bytes===null?'.15':'.75')+';height:'+(r.bytes===null?3:Math.max(4,Math.round(r.bytes/max*100)))+'%';bar.title=r.day+' · '+(r.bytes===null?'داده ثبت نشده':formatBytes(r.bytes));chart.appendChild(bar);});$('usage-history-info').textContent=known+'/'+n+' روز دارای داده · '+formatBytes(total);}
+  $('usage-history-period').onchange=renderUsageHistory;
+  var resetBackup=null;
+  $('reset-backup').onclick=async function(){resetBackup=null;try{var r=await fetch('/api/backup?purpose=reset',{credentials:'same-origin',cache:'no-store'});if(!r.ok)throw Error('Backup HTTP '+r.status);var text=await r.text(),digest=await crypto.subtle.digest('SHA-256',new TextEncoder().encode(text)),hash=Array.from(new Uint8Array(digest),function(b){return b.toString(16).padStart(2,'0');}).join('');if(hash!==r.headers.get('x-nightline-backup-sha256'))throw Error('Backup hash mismatch');var receipt=r.headers.get('x-nightline-backup-receipt'),filename=r.headers.get('x-nightline-backup-filename');if(!receipt||!filename)throw Error('Missing backup receipt');wwSave(text,filename,'application/json');resetBackup={backupReceipt:receipt,backupSha256:hash};$('reset-ack').checked=false;$('reset-info').className='workshop-status is-ok';$('reset-info').textContent=filename+' · SHA-256 '+hash;}catch(e){$('reset-info').className='workshop-status is-error';$('reset-info').textContent=e.message;}};
+  $('reset-apply').onclick=async function(){if(!resetBackup||!$('reset-ack').checked||$('reset-confirm').value!=='RESET'){$('reset-info').className='workshop-status is-error';$('reset-info').textContent='ابتدا بکاپ بگیرید، دریافت آن را تأیید و RESET را وارد کنید.';return;}this.disabled=true;try{var data=await api('/api/admin/factory-reset','POST',Object.assign({scope:$('reset-scope').value,confirm:'RESET',downloadAcknowledged:true},resetBackup));ingestBootstrap(data);resetBackup=null;$('reset-confirm').value='';$('reset-info').className='workshop-status is-ok';$('reset-info').textContent='بازنشانی انجام شد؛ بکاپ: '+data.backup.filename+' · '+data.backup.sha256;showToast('بازنشانی موفق؛ دسترسی‌ها حفظ شدند.','Reset complete; access preserved.');}catch(e){$('reset-info').className='workshop-status is-error';$('reset-info').textContent=e.message;}finally{this.disabled=false;}};
   var warpAccount=null,warpBusy=false,warpOutput=null;
   function wwStatus(message,error,confirmed){$('ww-status').textContent=message;$('ww-status').className='workshop-status '+(error?'is-error':confirmed?'is-ok':'');}
-  function wwOptions(){return {mode:$('ww-mode').value,endpoint:$('ww-endpoint').value.trim(),port:Number($('ww-port').value),mtu:Number($('ww-mtu').value),keepalive:Number($('ww-keepalive').value),dns:$('ww-dns').value,allowed:$('ww-allowed').value,sni:$('ww-sni').value,ipv6:$('ww-ipv6').checked,bypassLAN:$('ww-lan').checked,bypassIran:$('ww-iran').checked,awg:$('ww-awg').checked,jc:Number($('ww-jc').value),jmin:Number($('ww-jmin').value),jmax:Number($('ww-jmax').value),cps:[1,2,3,4,5].map(function(i){return $('ww-i'+i).value.trim();}),fragmentLength:$('ww-frag-length').value,fragmentDelay:$('ww-frag-delay').value,fragment:$('ww-fragment').checked};}
-  function wwRender(){['متعادل · MTU 1280','موبایل · IPv4 / MTU 1280','شبکهٔ پایدار · MTU 1420'].forEach(function(label,i){$('ww-preset').options[i].textContent=tr(label,['Balanced · MTU 1280','Mobile · IPv4 / MTU 1280','Stable network · MTU 1420'][i]);});var kind=$('ww-kind').value,masque=kind==='masque';$('ww-register').disabled=warpBusy;$('ww-file').disabled=warpBusy;$('ww-kind').disabled=warpBusy;$('ww-settings').hidden=!warpAccount;$('ww-mode').disabled=!masque;$('ww-preset').disabled=masque;['ww-keepalive','ww-mtu','ww-allowed','ww-preset'].forEach(function(id){$(id).parentElement.hidden=masque;});$('ww-sni').parentElement.hidden=!masque;$('ww-mode').parentElement.hidden=!masque;$('ww-kind').parentElement.style.gridColumn=masque?'1 / -1':'';$('ww-dns').parentElement.style.gridColumn=masque?'':'1 / -1';$('ww-fragment').closest('label').hidden=!masque||$('ww-mode').value!=='h2';$('ww-keepalive').disabled=masque;$('ww-mtu').disabled=masque;$('ww-allowed').disabled=masque;$('ww-sni').disabled=!masque;$('ww-fragment').disabled=!masque||$('ww-mode').value!=='h2';if($('ww-fragment').disabled)$('ww-fragment').checked=false;$('ww-fragment-tune').hidden=!masque||!$('ww-fragment').checked;$('ww-format').options[0].disabled=masque;if(masque)$('ww-format').value='xray';var isConf=$('ww-format').value==='conf';$('ww-awg-box').hidden=masque||!isConf;if(masque||!isConf)$('ww-awg').checked=false;$('ww-scan-box').hidden=masque;$('ww-show-qr').hidden=!isConf;if(!isConf){$('ww-qr-box').hidden=true;$('ww-qr').innerHTML='';}$('ww-lan').disabled=isConf;$('ww-iran').disabled=isConf;$('ww-lan').closest('label').hidden=isConf;$('ww-iran').closest('label').hidden=isConf;warpOutput=null;try{if(warpAccount)warpOutput=NLWarp.build(warpAccount,wwOptions(),$('ww-format').value);$('ww-preview').value=warpOutput?warpOutput.text:'';if(warpOutput&&isConf&&!$('ww-qr-box').hidden)drawQrInto('ww-qr',warpOutput.text);$('ww-download').disabled=!warpOutput;$('ww-export-hint').textContent=isConf&&$('ww-awg').checked?tr('فقط در AmneziaWG سازگار وارد کنید؛ WireGuard معمولی این فیلدها را نمی‌پذیرد.','Import into compatible AmneziaWG only, not standard WireGuard.'):isConf?tr('فایل را در WireGuard وارد کنید. مسیریابی مستقیم Xray در .conf اعمال نمی‌شود.','Import into WireGuard. Xray direct-routing options do not apply to .conf.'):tr('فایل را در کلاینت با هستهٔ به‌روز Xray وارد کنید. ساخت فایل، تأیید اتصال نیست.','Import into a client with current Xray. File generation does not certify connectivity.');}catch(e){$('ww-preview').value='';$('ww-download').disabled=true;$('ww-export-hint').textContent=e.message;}}
-  async function wwLoad(input,kind,source){var next=await NLWarp.normalize(input,kind);warpAccount=next;$('ww-kind').value=next.kind;var ep;try{ep=NLWarp.endpoint(next.endpoint.replace(/:0$/,''),next.kind==='wireguard'?undefined:443);}catch{ep={host:next.kind==='masque'?'162.159.198.2':'engage.cloudflareclient.com',port:next.kind==='masque'?443:2408};}$('ww-endpoint').value=ep.host;$('ww-port').value=ep.port;$('ww-format').value=next.kind==='masque'?'xray':'conf';wwStatus(source+' · '+tr('حساب بارگذاری شد؛ اتصال هنوز آزموده نشده است.','Account loaded; connection is not tested.'),false,true);wwRender();}
+  function wwOptions(){var format=$('ww-format').value;return {count:Number($('ww-count').value),pool:$('ww-pool').value,rotatePorts:$('ww-rotate-ports').checked,region:['masque-uri','hiddify'].indexOf(format)!==-1?'none':$('ww-region').value,geoSource:$('ww-geosource').value,hdMode:$('ww-hd-mode').value,mode:$('ww-mode').value,endpoint:$('ww-endpoint').value.trim(),port:Number($('ww-port').value),mtu:Number($('ww-mtu').value),keepalive:Number($('ww-keepalive').value),dns:$('ww-dns').value==='custom'?$('ww-dns-custom').value:$('ww-dns').value,allowed:$('ww-allowed').value,sni:$('ww-sni').value,ipv6:$('ww-ipv6').checked,bypassLAN:$('ww-lan').checked,bypassIran:$('ww-kind').value==='masque'?false:$('ww-iran').checked,awg:$('ww-awg').checked,jc:Number($('ww-jc').value),jmin:Number($('ww-jmin').value),jmax:Number($('ww-jmax').value),cps:[1,2,3,4,5].map(function(i){return $('ww-i'+i).value.trim();}),fragmentLength:$('ww-frag-length').value,fragmentDelay:$('ww-frag-delay').value,fragment:$('ww-fragment').checked};}
+  function wwRender(){['متعادل · MTU 1280','موبایل · IPv4 / MTU 1280','شبکهٔ پایدار · MTU 1420'].forEach(function(label,i){$('ww-preset').options[i].textContent=tr(label,['Balanced · MTU 1280','Mobile · IPv4 / MTU 1280','Stable network · MTU 1420'][i]);});var kind=$('ww-kind').value,masque=kind==='masque';$('ww-register').disabled=warpBusy;$('ww-file').disabled=warpBusy;$('ww-kind').disabled=warpBusy;$('ww-settings').hidden=!warpAccount;$('ww-mode').disabled=!masque;$('ww-preset').disabled=masque;['ww-keepalive','ww-mtu','ww-allowed','ww-preset'].forEach(function(id){$(id).parentElement.hidden=masque;});$('ww-sni').parentElement.hidden=!masque;$('ww-mode').parentElement.hidden=!masque;$('ww-kind').parentElement.style.gridColumn=masque?'1 / -1':'';$('ww-dns').parentElement.style.gridColumn=masque?'':'1 / -1';$('ww-fragment').closest('label').hidden=!masque||$('ww-mode').value!=='h2';$('ww-keepalive').disabled=masque;$('ww-mtu').disabled=masque;$('ww-allowed').disabled=masque;$('ww-sni').disabled=!masque;$('ww-fragment').disabled=!masque||$('ww-mode').value!=='h2';if($('ww-fragment').disabled)$('ww-fragment').checked=false;$('ww-fragment-tune').hidden=!masque||!$('ww-fragment').checked;$('ww-format').options[0].disabled=masque;if(masque&&$('ww-format').value==='conf')$('ww-format').value='xray';if(!masque&&['clash','masque-uri','hiddify'].indexOf($('ww-format').value)!==-1)$('ww-format').value='conf';$('ww-batch').hidden=!masque;if(!masque){$('ww-count').value=1;$('ww-pool').value='manual';}$('ww-region').disabled=['masque-uri','hiddify'].indexOf($('ww-format').value)!==-1;$('ww-hd-mode').disabled=$('ww-format').value!=='hiddify';for(var wi=2;wi<$('ww-format').options.length;wi++)$('ww-format').options[wi].disabled=!masque;var isConf=$('ww-format').value==='conf';$('ww-awg-box').hidden=masque||!isConf;if(masque||!isConf)$('ww-awg').checked=false;$('ww-scan-box').hidden=masque;$('ww-show-qr').hidden=!isConf;if(!isConf){$('ww-qr-box').hidden=true;$('ww-qr').innerHTML='';}$('ww-lan').disabled=isConf;$('ww-iran').disabled=isConf;$('ww-lan').closest('label').hidden=isConf;$('ww-iran').closest('label').hidden=isConf||masque;warpOutput=null;try{if(warpAccount)warpOutput=NLWarp.build(warpAccount,wwOptions(),$('ww-format').value);$('ww-preview').value=warpOutput?warpOutput.text:'';if(warpOutput&&isConf&&!$('ww-qr-box').hidden)drawQrInto('ww-qr',warpOutput.text);$('ww-download').disabled=!warpOutput;$('ww-export-hint').textContent=isConf&&$('ww-awg').checked?tr('فقط در AmneziaWG سازگار وارد کنید؛ WireGuard معمولی این فیلدها را نمی‌پذیرد.','Import into compatible AmneziaWG only, not standard WireGuard.'):isConf?tr('فایل را در WireGuard وارد کنید. مسیریابی مستقیم Xray در .conf اعمال نمی‌شود.','Import into WireGuard. Xray direct-routing options do not apply to .conf.'):tr('فایل را فقط در کلاینت پشتیبان همین قالب وارد کنید. قواعد منطقه در URI/Hiddify داخل کلاینت تنظیم می‌شوند؛ GeoIP نیاز به دیتای واقعی کلاینت دارد. ساخت فایل، تأیید اتصال نیست.','Use a client supporting this exact export format. File generation does not certify connectivity.');}catch(e){$('ww-preview').value='';$('ww-download').disabled=true;$('ww-export-hint').textContent=e.message;}}
+  async function wwLoad(input,kind,source){var next=await NLWarp.normalize(input,kind);warpAccount=next;$('ww-account-card').hidden=false;$('ww-account-info').textContent=JSON.stringify({deviceId:next.id,accountId:next.account?.id||'not supplied',type:next.account?.type||'not supplied',license:next.account?.license||'not supplied',created:next.account?.created||'not supplied',ttl:next.account?.ttl??'not supplied'},null,2);$('ww-kind').value=next.kind;var ep;try{ep=NLWarp.endpoint(next.endpoint.replace(/:0$/,''));}catch{ep={host:next.kind==='masque'?'162.159.198.2':'engage.cloudflareclient.com',port:next.kind==='masque'?443:2408};}$('ww-endpoint').value=ep.host;$('ww-port').value=ep.port;$('ww-format').value=next.kind==='masque'?'xray':'conf';$('ww-keepalive').value=next.kind==='wireguard'?0:5;wwStatus(source+' · '+tr('حساب بارگذاری شد؛ اتصال هنوز آزموده نشده است.','Account loaded; connection is not tested.'),false,true);wwRender();}
   function wwSave(text,name,type){var url=URL.createObjectURL(new Blob([text],{type:type||'application/octet-stream'})),a=document.createElement('a');a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(url);},1500);}
   $('ww-copy').onclick=async function(){try{await navigator.clipboard.writeText($('ww-preview').value);showToast('کپی شد','Copied');}catch(e){wwStatus('کپی نشد؛ متن را انتخاب کنید. / Select and copy the text.',true);}};
   $('ww-preview').oninput=function(){$('ww-qr-box').hidden=true;$('ww-qr').innerHTML='';};
   $('ww-endpoints-download').onclick=function(){wwSave($('ww-endpoints').value,'endpoints.txt','text/plain');};
   $('ww-scan-file').onchange=async function(){try{var f=this.files[0];if(!f||f.size>65536)throw Error('Maximum 64 KB');var data=JSON.parse(await f.text());if(data.schema!=='nightline-wg-scan-v1'||!Array.isArray(data.results)||data.results.length>64)throw Error('Invalid result file');var select=$('ww-scan-results');select.innerHTML='';data.results.filter(function(r){return r.ok===true&&Number.isFinite(r.ms)&&r.ms>=0;}).sort(function(a,b){return a.ms-b.ms;}).forEach(function(r){var ep=NLWarp.endpoint(r.endpoint);var op=document.createElement('option');op.value=JSON.stringify(ep);op.textContent=r.endpoint+' · '+r.ms+' ms · local helper';select.appendChild(op);});wwStatus(select.options.length?'نتیجهٔ ابزار محلی وارد شد؛ مقصد را انتخاب و اعمال کنید.':'پاسخ معتبری در فایل نیست.',!select.options.length);}catch(e){wwStatus(e.message,true);}finally{this.value='';}};
   $('ww-scan-apply').onclick=function(){try{var ep=JSON.parse($('ww-scan-results').value);$('ww-endpoint').value=ep.host;$('ww-port').value=ep.port;wwRender();wwStatus('مقصد به متن کانفیگ اعمال شد؛ عبور ترافیک هنوز تأیید نشده است.');}catch(e){wwStatus('ابتدا نتیجهٔ معتبر انتخاب کنید.',true);}};
-  $('ww-register').onclick=async function(){if(warpBusy)return;if(!$('ww-consent').checked){wwStatus(tr('ابتدا شرایط Cloudflare را بپذیرید.','Accept Cloudflare terms first.'),true);return;}warpBusy=true;wwRender();try{wwStatus(tr('۱/۲ ساخت کلید در مرورگر؛ سپس ثبت کلید عمومی…','1/2 Generating keys locally; registering public keys…'));var kind=$('ww-kind').value,wg=await NLWarp.keypair('wireguard'),masque=kind==='masque'?await NLWarp.keypair('masque'):null;var r=await api('/api/tools/warp/register','POST',{kind:kind,apiHost:$('ww-api-host').value,consent:true,wireguardPublicKey:wg.public_key,...(masque?{masquePublicKey:masque.public_key}:{})});wwStatus(tr('۲/۲ بررسی کلید مقصد و آدرس حساب…','2/2 Validating peer key and tunnel addresses…'));var account={...r,private_key:masque?masque.private_key:wg.private_key,...(masque?{endpoint_pub_key:r.peer_public_key}:{})};await wwLoad(account,kind,tr('ثبت مستقیم Cloudflare','Direct Cloudflare registration'));}catch(e){wwStatus(tr('حساب جدید آماده نشد: ','New account was not prepared: ')+(e.name==='NotSupportedError'?tr('مرورگر به‌روز لازم است؛ می‌توانید فایل حساب را وارد کنید.','Update your browser, or import an account file.'):e.message)+(warpAccount?tr(' · حساب قبلی حفظ شد.',' · Previous account retained.'):''),true);}finally{warpBusy=false;wwRender();}};
+  $('ww-register').onclick=async function(){if(warpBusy)return;if(!$('ww-consent').checked){wwStatus(tr('ابتدا شرایط Cloudflare را بپذیرید.','Accept Cloudflare terms first.'),true);return;}warpBusy=true;wwRender();try{wwStatus(tr('۱/۲ ساخت کلید در مرورگر؛ سپس ثبت کلید عمومی…','1/2 Generating keys locally; registering public keys…'));var kind=$('ww-kind').value,wg=await NLWarp.keypair('wireguard'),masque=kind==='masque'?await NLWarp.keypair('masque'):null;var r=await api('/api/tools/warp/register','POST',{kind:kind,apiHost:$('ww-api-host').value,apiVersion:kind==='masque'?'v0a4471':$('ww-api-version').value,deviceType:$('ww-device').value,locale:$('ww-locale').value,consent:true,wireguardPublicKey:wg.public_key,...(masque?{masquePublicKey:masque.public_key}:{})});wwStatus(tr('۲/۲ بررسی کلید مقصد و آدرس حساب…','2/2 Validating peer key and tunnel addresses…'));var account={...r,private_key:masque?masque.private_key:wg.private_key,...(masque?{endpoint_pub_key:r.peer_public_key}:{})};await wwLoad(account,kind,tr('ثبت مستقیم Cloudflare','Direct Cloudflare registration'));}catch(e){wwStatus(tr('حساب جدید آماده نشد: ','New account was not prepared: ')+(e.name==='NotSupportedError'?tr('مرورگر به‌روز لازم است؛ می‌توانید فایل حساب را وارد کنید.','Update your browser, or import an account file.'):e.message)+(warpAccount?tr(' · حساب قبلی حفظ شد.',' · Previous account retained.'):''),true);}finally{warpBusy=false;wwRender();}};
   $('ww-file').onchange=async function(){var f=this.files&&this.files[0];if(!f)return;try{if(f.size>65536)throw Error(tr('فایل حداکثر ۶۴ کیلوبایت باشد.','Maximum file size is 64 KB.'));await wwLoad(await f.text(),null,tr('ورود محلی','Local import'));}catch(e){wwStatus(tr('فایل پذیرفته نشد: ','Import rejected: ')+e.message,true);}finally{this.value='';}};
   $('ww-download').onclick=function(){if(warpOutput)wwSave($('ww-preview').value,'NightLine-free-'+warpAccount.kind+'.'+warpOutput.ext,warpOutput.ext==='json'?'application/json':'text/plain');};
   $('ww-backup').onclick=function(){if(!warpAccount)return;wwSave(JSON.stringify({...warpAccount,...(warpAccount.kind==='masque'?{endpoint_pub_key:warpAccount.peer_public_key}:{})},null,2),'NightLine-private-account.json','application/json');};
   $('ww-show-qr').onclick=function(){wwRender();if(warpOutput&&$('ww-format').value==='conf'){$('ww-qr-box').hidden=false;drawQrInto('ww-qr',warpOutput.text);}};
-  $('ww-clear').onclick=function(){$('ww-qr-box').hidden=true;$('ww-qr').innerHTML='';warpAccount=null;warpOutput=null;$('ww-preview').value='';wwStatus(tr('حساب از حافظهٔ این تب پاک شد؛ ثبت Cloudflare لغو نشده است.','Account cleared from this tab; Cloudflare registration was not revoked.'));wwRender();};
+  $('ww-clear').onclick=function(){$('ww-qr-box').hidden=true;$('ww-qr').innerHTML='';warpAccount=null;warpOutput=null;$('ww-account-card').hidden=true;$('ww-account-info').textContent='';$('ww-preview').value='';wwStatus(tr('حساب از حافظهٔ این تب پاک شد؛ ثبت Cloudflare لغو نشده است.','Account cleared from this tab; Cloudflare registration was not revoked.'));wwRender();};
   $('ww-kind').onchange=function(){$('ww-qr-box').hidden=true;$('ww-qr').innerHTML='';warpAccount=null;warpOutput=null;$('ww-port').value=this.value==='masque'?443:2408;$('ww-endpoint').value='';$('ww-consent').checked=false;wwStatus(tr('حسابی بارگذاری نشده است.','No account loaded.'));wwRender();};
-  $('ww-preset').onchange=function(){$('ww-mtu').value=this.value==='fast'?1420:1280;$('ww-keepalive').value=25;$('ww-ipv6').checked=this.value!=='mobile';wwRender();};
+  $('ww-preset').onchange=function(){$('ww-mtu').value=this.value==='fast'?1420:1280;$('ww-keepalive').value=0;$('ww-ipv6').checked=this.value!=='mobile';wwRender();};
   ['ww-mode','ww-dns','ww-endpoint','ww-port','ww-mtu','ww-keepalive','ww-sni','ww-allowed','ww-ipv6','ww-lan','ww-iran','ww-fragment','ww-format','ww-awg','ww-jc','ww-jmin','ww-jmax','ww-i1','ww-i2','ww-i3','ww-i4','ww-i5','ww-frag-length','ww-frag-delay'].forEach(function(id){$(id).addEventListener('change',wwRender);});
+  NLWarp.presets.dns.forEach(function(p){if(!Array.from($('ww-dns').options).some(function(o){return o.value===p[1];})){var o=document.createElement('option');o.value=p[1];o.textContent=p[0];$('ww-dns').appendChild(o);}});var customDns=document.createElement('option');customDns.value='custom';customDns.textContent='Custom / دلخواه';$('ww-dns').appendChild(customDns);
+  NLWarp.presets.sni.forEach(function(s){var o=document.createElement('option');o.value=s;$('ww-snis').appendChild(o);});NLWarp.presets.ports.forEach(function(p){var o=document.createElement('option');o.value=p;$('ww-ports').appendChild(o);});
+  ['ww-count','ww-pool','ww-region','ww-geosource','ww-hd-mode','ww-rotate-ports','ww-dns-custom'].forEach(function(id){$(id).addEventListener('change',wwRender);});
   wwRender();
   function relayMetric(parent,label,value){var span=document.createElement('span'),bdi=document.createElement('bdi');span.textContent=label+' ';bdi.dir='ltr';bdi.textContent=String(value);span.appendChild(bdi);parent.appendChild(span);}
   var relayController=null;

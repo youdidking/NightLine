@@ -1,0 +1,15 @@
+# OPTIONAL: use only after reading docs/CENTRAL_STORAGE_FA.md and taking a backup.
+name = "nightline"
+main = "worker-single-file.js"
+compatibility_date = "2026-04-01"
+[[kv_namespaces]]
+binding = "KV"
+id = "REPLACE_WITH_YOUR_EXISTING_KV_ID"
+[[durable_objects.bindings]]
+name = "NL_COORDINATOR"
+class_name = "NightLineCoordinator"
+[[migrations]]
+tag = "nightline-central-v1"
+new_sqlite_classes = ["NightLineCoordinator"]
+[observability]
+enabled = false

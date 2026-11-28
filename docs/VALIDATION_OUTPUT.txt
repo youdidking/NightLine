@@ -1,0 +1,137 @@
+
+> nightline@2.6.3 lint
+> eslint .
+
+
+> nightline@2.6.3 test:all
+> npm test && npm run test:regression && npm run test:installer && npm run test:pages && npm run test:releases && npm run test:core && npm run test:network && npm run test:chain && npm run test:countries && npm run test:workshop && npm run test:endpoints && npm run test:lab && npm run test:storage && npm run test:assets && npm run test:revised
+
+
+> nightline@2.6.3 test
+> node test.mjs
+
+═══ NIGHTLINE v2.6.3 Full Live Verification Suite (15/15) ═══
+✓ [1/15] /health + /api/client-info + /api/speed-probe -> version=2.6.3, 64KB down/up + upload limit OK
+✓ [network] Diagnostic WebSocket echoed a nonce on the actual local Worker
+✓ [2/15] Setup & Defaults -> 0 remarkPrefix, 4 ProxyIPs, tg://webproxy ready
+✓ [3/15] Ports & Emoji-Free Subscriptions -> All 6 TLS + 7 HTTP ports (41 lines), 0 emojis
+✓ [4/15] Private DoH -> Emoji-free HTML Guide 200 + JSON 200 + RFC 8484 POST 200
+✓ [5/15] Cloudflare-Hosted Tunnel -> LIVE HTTPS to www.speedtest.net over fragmented VLESS returned 200 OK
+✓ [6/15] Official Telegram Web Proxy -> HMAC Bridge 200 + Session Lease 200 + Lane WS 101 verified
+✓ [7/15] Visitor IP/Country/ISP Strip + BLUR Toggle -> IP="136.70.33.1", filter="blur(0px)" verified
+✓ [login/admin] Sponsor absent on login, floating only in panel; exact link, animation, themes, mobile & popup
+✓ [8/15] Zero-Emoji & Custom SVG Icon Audit -> 0 emojis in DOM, 244 crisp vector icons rendered
+✓ [9/15] Stationary-Shadow Press + Crisp Hover -> (+3px, +3px) press, no fractional hover blur
+✓ [10/15] Monochrome Live Speed & Usage Chart -> Burst=133.6 Mbps, canvas=1046x176 verified
+✓ [tunnel diagnostic] VLESS · HTTP 204 · 15 ms · 3/3
+✓ [11/15] Advisor -> 12 observations, bounded upload/download, no false diagnosis; saved settings preserved; client auto-selection profile available
+✓ [Iran policy] repeated real tunnel replies, no changes before confirmation, explicit apply, persisted settings and updated Normal subscription; original fixture restored.
+✓ [Country links] Browser ClipboardItem async copy carries country in Normal and Xray subscription URL fragments.
+✓ [12/15] Official 22 CIDRs + selectable sampling, no false raw-IP health, GeoIP flag in node names, Normal URI & 5-OS official directory
+✓ [13/15] New User Isolation & Progress Bar Fix -> SinA (0 B / ∞) bar=0%, duplicate UUID blocked
+✓ [14/15] Cloudflare Daily Request Quota Bar & Token Verifier -> 27.4K/100K (27%), mini permissions popup verified
+✓ [15/15] GitHub Self-Updater (youdidking/NightLine) + Tab 05 Spacing (14px == 14px) + Clean Captions verified!
+
+ALL 15/15 NIGHTLINE v2.6.3 E2E VERIFICATION SUITES PASSED WITH ZERO ERRORS!
+
+> nightline@2.6.3 test:regression
+> node regression.mjs
+
+PASS mandatory notices and bounded fragment ranges
+PASS URI notices, Xray fragment chain, TLS checks and shared Early Data across formats
+PASS installer deployment, direct official file download, initialized KV, naming and credential isolation (mock API)
+PASS failed official download stops installation before resource creation
+PASS installer rollback after publish failure (mock API)
+PASS reject ambiguous multi-account tokens before creating resources
+All regression groups passed. Live Cloudflare installation and Iranian ISP Fragment performance are not certified by these tests.
+PASS bracketed IPv6 clean-IP country label preserved without requiring an explicit port.
+
+> nightline@2.6.3 test:installer
+> node test-installer.mjs
+
+PASS installer real workerd + Chromium: no JS errors, token validation, live NDJSON progress, seven stages, same-site completion, errors, naming, KV security, mobile layout, Workers/Pages menu, Pages token template, full Pages upload and no persisted credentials.
+Cloudflare account operations were served by a local mock; this is not a live account deployment certification.
+
+> nightline@2.6.3 test:pages
+> node test-pages.mjs && node test-pages-runtime.mjs
+
+PASS Pages installation: permissions, full ESM upload, empty asset manifest, production/preview KV + setup lock, seeded admin, pages.dev result, seven stages, deployment failure rollback and conservative cleanup. CF API is mocked.
+PASS actual Pages authenticated VLESS + Trojan -> external HTTP 204, including split protocol headers.
+PASS actual Pages -> authenticated HTTP CONNECT/SOCKS5 -> external HTTP 204 for both VLESS/Trojan; wrong chain auth closes without direct fallback; CONNECT-443 probe verified.
+PASS actual local Pages workerd: standalone ESM without assets, full panel/health, KV binding and SETUP_LOCKED. Not a live Cloudflare Pages account deployment.
+
+> nightline@2.6.3 test:releases
+> node test-releases.mjs
+
+PASS direct official download: zero REST API calls, dynamic same-file version, no CF credentials, SHA-256 identification, size/HTML/header/module guards and no redirects or silent embedded fallback.
+
+> nightline@2.6.3 test:core
+> node test-core.mjs && node test-auto-core.mjs
+
+PASS real Xray config validation: 16 configs; baseline, small TLSHello, client fragment comparison and saved routing; diagnostic profiles require no geodata. This does not test censorship circumvention.
+PASS native Xray observatory + leastPing: dead first/fallback paths, one working authenticated VLESS path, verified nested HTTPS; actual HTTP proxy request selected working route. TLS verification remained enabled. No external ISP claim.
+PASS native Xray observatory + leastPing: dead first/fallback paths, one working authenticated Trojan path, verified nested HTTPS; actual HTTP proxy request selected working route. TLS verification remained enabled. No external ISP claim.
+
+> nightline@2.6.3 test:network
+> node test-network.mjs
+
+PASS browser diagnostics: median/jitter, real repeated raw-IP attempts, no quick-error false positives, health/DoH validation, bounded concurrency and cancellation.
+PASS dual-channel radar: fetch+image, calibrated candidates distinct from HTTP proof, control-address veto, TLS-only scanning and abort cleanup.
+PASS Relay Delay: one excluded warm-up, five actual 204 samples, setup/relay split, median/p95, cancellation; captive HTML and redirects never count as pings.
+PASS authenticated tunnel diagnostics: VLESS/Trojan framing, real HTTP response requirement, rejection/error never becomes ping, missing identity guarded.
+PASS lazy CIDR permutation: constant memory, no repeats, IPv4/IPv6 exhaustion; no 12/48/64 scan budget cap.
+
+> nightline@2.6.3 test:chain
+> node test-chain.mjs
+
+PASS real TCP chain: SOCKS5 no-auth/auth/Base64 auth, split handshake, domain/IPv4/IPv6, HTTP/HTTPS CONNECT with Basic auth, trusted TLS certificate, auth denial and bounded stall. No direct fallback.
+
+> nightline@2.6.3 test:countries
+> node test-tools.mjs && node test-country-runtime.mjs
+
+PASS GeoIP: canonical bare/bracketed IPv6, IP matching, ISO validation, two-source quorum/third-source tie-break, no stale/guessed flags, explicit manual labels, TTL and bounded progressive coverage.
+PASS actual workerd: legacy routes retired and new isolated workshop present; matching IPv4 and bare/bracketed IPv6 countries; metadata, raw/b64/Xray/Sing-box/Clash node names, fragment-labelled links and profile-title; same URL updates after IP changes; unknown/stale handling; canonical cache reuse. GeoIP providers mocked.
+
+> nightline@2.6.3 test:workshop
+> node test-workshop.mjs && node test-workshop-ui.mjs
+
+PASS workshop: actual X25519 and P-256 keys; SEC1/PKCS8/SPKI validation; distinct protocols; WG .conf round-trip; H2/H3 and H2 fragment; options/IPv6; no TLS bypass; public-key-only two-stage registration; rate-limit errors, explicit consent and failed-enrollment cleanup. Upstream account API mocked. Native-test JSON fixtures generated.
+PASS 2.6.3: AWG WARP-compatible S/H, bounded junk/CPS, adjustable fragment validation, PEM server keys, official alternative host, no 403/429 retry.
+PASS real workerd + Chromium: public-key-only registration, CSRF/rate limits, WG download, local usque import, H2/H3/fragment controls, no secrets in storage or outbound panel credentials, mobile layout, clear-tab, repeatable edition notes and future-version popup, actual browser → Worker tunnel → HTTP 204 Relay Delay (five samples). Registration API mocked; relay was real.
+
+> nightline@2.6.3 test:endpoints
+> node test-endpoint-scan.mjs
+
+PASS local Noise_IKpsk2: independent responder decrypts authentic client static key and timestamp; valid encrypted response accepted; tampered/wrong receiver/cookie-sized packets rejected. No UDP reachability claim.
+
+> nightline@2.6.3 test:lab
+> node test-lab.mjs
+
+PASS Network Lab: direct browser probes, strict DNS/trace validation, opaque never green, public targets only, CIDR sampling, permission/no autorun, cancel/export/filter/local WG report, offline assets, desktop/mobile/reduced motion, static gzip route before setup, categorized keyboard-accessible panel tabs. Network responses mocked; protocol helper separately tested.
+
+> nightline@2.6.3 test:storage
+> node test-storage.mjs && node test-central.mjs
+
+PASS storage: 7/11 failure/retry, no double count, new traffic during put preserved, ambiguous acknowledgement deduplicated, defensive three-way merge, overlapping conflict, no optimistic cache poisoning. KV cross-isolate atomicity is NOT claimed.
+PASS real SQLite DO + two independent storage module instances: concurrent 7/11 + 5/9 counters retained, independent settings merged, overlapping stale update rejected, no duplicate retry, shared concurrent login limit. Local workerd, not a deployed account certification.
+
+> nightline@2.6.3 test:assets
+> node test-assets.mjs
+
+PASS real workerd: small HTML shell, content-addressed CSS/JS, immutable public cache, conditional 304, missing asset 404. Private API not cached.
+
+> nightline@2.6.3 test:revised
+> node test-reset.mjs && node test-updater.mjs && node test-kv-budget.mjs && node test-sub-cache.mjs && node test-warp-revised.mjs && node test-warp-native.mjs && node test-revised-ui.mjs
+
+PASS reset actual workerd: admin+Origin, missing/stale/tampered backup rejected, SHA-256 receipt, settings preserves users/counters, state clears counters/history but preserves credentials/tokens/expiry and audit log. Browser download storage cannot be guaranteed by server.
+PASS updater actual workerd + mocked CF/GitHub: configurable repository, wrong hash rejected, same-version force, changed bytes rejected, explicit manual SHA approval, pinned Ed25519 signature/tamper checks, pre-backup fail-closed, successful upload, rollback on failed PUT, manual rollback, preserved bindings. No deployed-account or release-signature certification.
+PASS actual workerd Ed25519 path: pinned raw public key + detached signature verifies exact candidate bytes before deployment; no manual hash bypass needed. Test key only, not an official release signature.
+PASS KV budget simulation: 100 events/290s -> one queued state PUT, real persisted daily usage, unsent-RAM loss visible after simulated isolate restart, 900-write warning -> 10-minute interval. Daily state counter is piggybacked (no extra counter PUT); not an atomic account-wide quota or crash-durability guarantee.
+PASS private subscription cache actual workerd: ETag/304 includes live userinfo; paused/revoked tokens never get stale 304.
+PASS revised workshop: 24 SNI/14 DNS/7 ports, usque aliases + pinned P-256 keys, 1–10 configs, mixed family/port pools, snapshot hashes for Xray/Clash-YAML/Shadowrocket-URI/Hiddify, explicit unsupported-option rejection, Iran geodata opt-in, v0a737 public-key-only device/locale registration. Snapshots do NOT certify live MASQUE transport.
+PASS native Mihomo v1.19.33 + Xray v26.10.31 parsers: 10 H2/H3/mixed-family configurations; SEC1 key conversion accepted by Mihomo. Config validation only, not a live WARP/MASQUE handshake. Hiddify/Shadowrocket import not natively certified.
+PASS revised Chromium/workerd: multi-node pool, four client exports, Hiddify selector, custom-DNS validation, mobile layout, honest empty 7/30-day history, actual backup download event and typed/acknowledged factory-reset flow. No native client connection claim.
+TEST_EXIT=0
+worker-single-file.js: OK
+nightline-installer.js: OK
+dist/nightline-pages.zip: OK

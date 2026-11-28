@@ -1,3 +1,9 @@
+import {privateSubscriptionResponse} from './subscription-cache.js';
+import {repository,verifyUpdate,verifyReleaseSignature,fetchUpdateText,saveLastGood,readLastGood,downloadCurrentBundle} from './update-guard.js';
+import {makeResetBackup,resetWithReceipt} from './maintenance.js';
+export {NightLineCoordinator} from './coordinator.js';
+import {hasCoordinator,centralLogin} from './coordinator.js';
+import {servePublicAsset,PANEL_ETAG} from './generated/public-assets.js';
 import { serveNetworkLab } from './generated/network-lab.js';
 import { INSTALLED_CHANGES } from './changes.js';
 import { registerWarp } from './warp-registration.js';
@@ -25,8 +31,9 @@ import {
   appendLog,
   checkLoginRateLimit,
   clearLoginFailures,
-  clearPendingUsage,
+  storageDiagnostics,
   enrichUserView,
+  findKV,
   GITHUB_REPO,
   GITHUB_REPO_URL,
   initializePanelState,
@@ -209,6 +216,8 @@ export default {
       const path = url.pathname || '/';
       const upgradeHeader = (request.headers.get('upgrade') || '').toLowerCase();
 
+      if(path.startsWith('/assets/'))return servePublicAsset(request,url);
+      if((path==='/panel'||path==='/panel/')&&upgradeHeader!=='websocket')return await servePanelShell(request,env);
       if(path==='/tools/network-lab'&&upgradeHeader!=='websocket')return serveNetworkLab(request,url);
       // 0) Fast zero-KV favicon response
       if (upgradeHeader !== 'websocket' && path === '/favicon.ico') {
@@ -221,7 +230,7 @@ export default {
         });
       }
 
-      const runtime = await loadRuntimeState(env);
+      const runtime = await loadRuntimeState(env,hasCoordinator(env)||path==='/sub'||path.startsWith('/sub/'));
 
       // 1) WebSocket Upgrade: Official Telegram Web Proxy (`/api/v1/ws`) OR VLESS/Trojan Tunnel
       if (upgradeHeader === 'websocket') {
@@ -243,7 +252,7 @@ export default {
       }
 
       // 2) Health probe (`/health` & `/api/ping`)
-      if (path === '/api/ping' || path === '/health') {
+      if (path === '/api/ping' || path === '/health' || path === '/api/health') {
         return json(
           {
             ok: true,
@@ -286,7 +295,7 @@ export default {
         }
         if((url.searchParams.get('format')||'').startsWith('warp-'))return json({ok:false,error:'این قالب قدیمی پشتیبانی نمی‌شود؛ خروجی تازه را از کارگاه اتصال بگیرید.'},410);
         let labeledSettings=enrichUserView(matched).status==='active'?await refreshCountryLabels(runtime.settings,fetch,{hosts:buildNodeDescriptors(enrichUserView(matched),runtime.settings,url.host).map(n=>n.address)}):runtime.settings;
-        return await serveSubscription(request, matched, labeledSettings, await getInlineAssets());
+        return await privateSubscriptionResponse(request,await serveSubscription(request, matched, labeledSettings, await getInlineAssets()),enrichUserView(matched).status==='active',runtime.auth?.ver||1);
       }
 
       // 6) Explicit Admin Panel route (/panel)
@@ -325,10 +334,10 @@ export default {
       return json(
         {
           ok: false,
-          error: 'خطای داخلی سرور رخ داد؛ درخواست با ایمنی مهار شد.',
+          error:err?.status===409?err.message:'خطای داخلی سرور رخ داد؛ درخواست با ایمنی مهار شد.',
           detail: err && err.message ? err.message : String(err),
         },
-        500
+        err?.status||500
       );
     }
   },
@@ -504,7 +513,7 @@ async function handleApi(request, url, env, runtime) {
       return json({ ok: false, error: 'پنل هنوز راه‌اندازی نشده است.' }, 400);
     }
 
-    const limit = checkLoginRateLimit(clientIp);
+    const limit = hasCoordinator(env)?await centralLogin(env,clientIp,'check'):checkLoginRateLimit(clientIp);
     if (!limit.allowed) {
       return json(
         { ok: false, error: `تلاش‌های ناموفق بیش از حد مجاز. ${limit.retrySec} ثانیه صبر کنید.` },
@@ -518,11 +527,11 @@ async function handleApi(request, url, env, runtime) {
     const rawPw = String(body.password || '');
     const valid = await verifyPassword(rawPw, runtime.auth);
     if (!valid) {
-      recordLoginFailure(clientIp);
+      if(hasCoordinator(env))await centralLogin(env,clientIp,'fail');else recordLoginFailure(clientIp);
       return json({ ok: false, error: 'گذرواژه اشتباه است.' }, 401);
     }
 
-    clearLoginFailures(clientIp);
+    if(hasCoordinator(env))await centralLogin(env,clientIp,'clear');else clearLoginFailures(clientIp);
     let fresh = await loadRuntimeState(env, true);
 
     // Auto-migrate legacy high-iteration PBKDF2 records down to Free-Tier-safe 10,000 iterations
@@ -545,18 +554,21 @@ async function handleApi(request, url, env, runtime) {
   // ---- POST /api/logout ----
   if (path === '/api/logout' && method === 'POST') {
     return json({ ok: true }, 200, {
-      'set-cookie': `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax`,
+      'set-cookie': `${SESSION_COOKIE}=; Path=/; Max-Age=0; HttpOnly; SameSite=Lax${url.protocol==='https:'?'; Secure':''}`,
     });
   }
 
   // =========================================================================
   // Authenticated admin endpoints below
   // =========================================================================
+  if(path==='/api/admin/factory-reset'&&!(await isAuthenticated(request,runtime)))return json({ok:false,error:'Admin required'},403);
   if (!(await isAuthenticated(request, runtime))) {
     return json({ ok: false, error: 'نشست مدیریتی منقضی شده یا وارد نشده‌اید.' }, 401);
   }
 
   const state = await loadRuntimeState(env, true);
+  if(!(await isAuthenticated(request,state)))return json({ok:false,error:'نشست مدیریت معتبر نیست.'},401);
+  const expected=request.headers.get('if-match');if(expected&&['PUT','POST','DELETE'].includes(method)&&['/api/settings','/api/users','/api/restore','/api/password'].some(p=>path===p||path.startsWith(p+'/'))&&expected!==String(state.configRevision||0))return json({ok:false,error:'اطلاعات صفحه قدیمی است؛ تازه‌سازی و دوباره تلاش کنید.'},409);
   if(path.startsWith('/api/warp/'))return json({ok:false,error:'این مسیر قدیمی پشتیبانی نمی‌شود؛ از کارگاه اتصال استفاده کنید.'},410);
 
   if(path==='/api/tools/warp/register'&&method==='POST'){
@@ -711,7 +723,7 @@ async function handleApi(request, url, env, runtime) {
       startOnFirstUse: Boolean(body.startOnFirstUse),
       enabled: body.enabled !== false,
     });
-    clearPendingUsage(newUser.id);
+
     state.users = [...state.users, newUser];
     appendLog(state, 'user:add', `مشترک جدید ساخته شد: ${newUser.name}`);
     const saved = await saveRuntimeState(env, state);
@@ -752,7 +764,7 @@ async function handleApi(request, url, env, runtime) {
       }
       const nextUsers = [...state.users];
       const removed = nextUsers.splice(idx, 1)[0];
-      clearPendingUsage(removed.id);
+
       state.users = nextUsers;
       appendLog(state, 'user:del', `مشترک حذف شد: ${removed.name}`);
       const saved = await saveRuntimeState(env, state);
@@ -769,7 +781,7 @@ async function handleApi(request, url, env, runtime) {
       const doRotate = body.action === 'rotate_keys' || Boolean(body.rotateKeys);
 
       if (doReset) {
-        clearPendingUsage(cur.id);
+
         cur.usedUpBytes = 0;
         cur.usedDownBytes = 0;
         cur.connections = 0;
@@ -849,8 +861,15 @@ async function handleApi(request, url, env, runtime) {
     return json(result);
   }
 
+  if(path==='/api/admin/factory-reset'&&method==='POST'){
+    if(request.headers.get('origin')!==url.origin)return json({ok:false,error:'Origin denied'},403);
+    const body=await readJsonBody(request);if(body.__parseError)return json({ok:false,error:body.__parseError},400);
+    const backup=await resetWithReceipt(state,body);const saved=await saveRuntimeState(env,state);
+    return json({...buildFullAdminPayload(saved,url.host,cfInfo),backup});
+  }
   // ---- GET /api/backup ----
   if (path === '/api/backup' && method === 'GET') {
+    if(url.searchParams.get('purpose')==='reset'){const b=await makeResetBackup(state);return new Response(b.text,{headers:{'content-type':'application/json; charset=utf-8','cache-control':'no-store','content-disposition':'attachment; filename="'+b.filename+'"','x-nightline-backup-sha256':b.hash,'x-nightline-backup-receipt':b.receipt,'x-nightline-backup-filename':b.filename}});}
     return new Response(
       JSON.stringify(
         {
@@ -868,6 +887,7 @@ async function handleApi(request, url, env, runtime) {
         status: 200,
         headers: {
           'content-type': 'application/json; charset=utf-8',
+          'cache-control':'no-store',
           'content-disposition': `attachment; filename="nightline-backup-${new Date().toISOString().slice(0, 10)}.json"`,
         },
       }
@@ -1085,16 +1105,18 @@ async function handleApi(request, url, env, runtime) {
       );
     }
 
+    if(request.headers.get('origin')!==url.origin)return json({ok:false,error:'Origin denied'},403);
     const result = await applyOfficialGitHubSelfUpdate({
       token,
       accountId,
       scriptName,
-      env,
+      env,approvedHash:body.approvedHash,force:body.force===true,rollback:body.action==='rollback',
     });
     if (!result.ok) {
       return json(result, 400);
     }
 
+    if(result.needsConfirmation)return json(result);
     state.cfApi = {
       ...(state.cfApi || {}),
       token,
@@ -1186,6 +1208,9 @@ function buildFullAdminPayload(state, host, cf = null) {
     state: 'ready',
     mode: 'admin',
     installedChanges: INSTALLED_CHANGES,
+    configRevision:state.configRevision||0,
+    storage:state.storage||null,
+    usageHistory:state.usageHistory||{},
     host,
     edge: cf?.colo || 'CF-GLOBAL',
     kvBound: state.kvBound,
@@ -1313,6 +1338,7 @@ async function proxyFallbackDomain(request, fallbackDomain, inlineAssets) {
 }
 
 async function servePanelShell(request, env) {
+  if(request.headers.get('if-none-match')===PANEL_ETAG)return new Response(null,{status:304,headers:{etag:PANEL_ETAG,'cache-control':'private, no-cache'}});
   if (env && env.ASSETS && typeof env.ASSETS.fetch === 'function') {
     try {
       const assetUrl = new URL(request.url);
@@ -1327,7 +1353,9 @@ async function servePanelShell(request, env) {
       status: 200,
       headers: {
         'content-type': 'text/html; charset=utf-8',
-        'cache-control': 'no-cache',
+        'cache-control': 'private, no-cache',
+        'etag':PANEL_ETAG,
+        'x-content-type-options':'nosniff',
       },
     });
   }
@@ -1650,6 +1678,7 @@ function compareSemver(a, b) {
 }
 
 async function checkOfficialGitHubUpdate(cfApi, host, env) {
+  const GITHUB_REPO=repository(env),GITHUB_REPO_URL='https://github.com/'+GITHUB_REPO;
   const ghApiBase = String(env?.NL_GH_API_BASE || 'https://api.github.com').replace(/\/+$/, '');
   const ghRawBase = String(env?.NL_GH_RAW_BASE || 'https://raw.githubusercontent.com').replace(/\/+$/, '');
   const ghHeaders = {
@@ -1662,7 +1691,7 @@ async function checkOfficialGitHubUpdate(cfApi, host, env) {
   let releaseNotes = '';
   let publishedAt = '';
   let assetWorkerUrl = '';
-  let tagRef = 'main';
+  let tagRef = 'main',checksumUrl='',signatureUrl='';
 
   const relRes = await fetchJsonWithTimeout(
     `${ghApiBase}/repos/${GITHUB_REPO}/releases/latest`,
@@ -1682,6 +1711,7 @@ async function checkOfficialGitHubUpdate(cfApi, host, env) {
       );
       if (workerAsset) {
         assetWorkerUrl = String(workerAsset.browser_download_url);
+        checksumUrl=String(relRes.data.assets.find(a=>a.name==='worker-single-file.js.sha256')?.browser_download_url||'');signatureUrl=String(relRes.data.assets.find(a=>a.name==='worker-single-file.js.sig')?.browser_download_url||'');
       }
     }
   }
@@ -1697,9 +1727,7 @@ async function checkOfficialGitHubUpdate(cfApi, host, env) {
     if (!latestVersion || compareSemver(mainVer, latestVersion) > 0) {
       latestVersion = mainVer;
       tagRef = 'main';
-      if (!assetWorkerUrl) {
-        assetWorkerUrl = `${ghRawBase}/${GITHUB_REPO}/main/worker-single-file.js`;
-      }
+      assetWorkerUrl = `${ghRawBase}/${GITHUB_REPO}/main/worker-single-file.js`;checksumUrl='';signatureUrl='';
     }
   }
 
@@ -1746,13 +1774,15 @@ async function checkOfficialGitHubUpdate(cfApi, host, env) {
     releaseNotes,
     publishedAt,
     scriptUrl: assetWorkerUrl,
+    checksumUrl,signatureUrl,
     cfConfigured: Boolean(cfApi?.token),
     canEditWorkers: Boolean(cfApi?.canEditWorkers),
     scriptName: String(cfApi?.scriptName || '').trim() || inferWorkerNameFromHost(host),
   };
 }
 
-async function applyOfficialGitHubSelfUpdate({ token, accountId, scriptName, env }) {
+async function applyOfficialGitHubSelfUpdate({ token, accountId, scriptName, env, approvedHash, force=false, rollback=false }) {
+  const GITHUB_REPO=repository(env),GITHUB_REPO_URL='https://github.com/'+GITHUB_REPO;
   const cfBase = String(env?.NL_CF_API_BASE || 'https://api.cloudflare.com/client/v4').replace(/\/+$/, '');
   const ghRawBase = String(env?.NL_GH_RAW_BASE || 'https://raw.githubusercontent.com').replace(/\/+$/, '');
 
@@ -1783,35 +1813,24 @@ async function applyOfficialGitHubSelfUpdate({ token, accountId, scriptName, env
   }
 
   // 3. Check official GitHub release / main bundle from youdidking/NightLine
-  const updateInfo = await checkOfficialGitHubUpdate({ token, scriptName: targetScript }, '', env);
+  const updateInfo = rollback?{ok:true}:await checkOfficialGitHubUpdate({ token, scriptName: targetScript }, '', env);
   if (!updateInfo.ok) {
     return { ok: false, error: updateInfo.error || 'خطا در دریافت اطلاعات مخزن گیت‌هاب.' };
   }
 
-  const candidateUrls = [
-    updateInfo.scriptUrl,
-    `${ghRawBase}/${GITHUB_REPO}/main/worker-single-file.js`,
-  ].filter(Boolean);
-
-  let workerCode = '';
-  for (const dlUrl of candidateUrls) {
-    const dlRes = await fetchJsonWithTimeout(
-      dlUrl,
-      { headers: { 'user-agent': `NIGHTLINE-Updater/${PANEL_VERSION}` } },
-      15000
-    );
-    if (dlRes.ok && typeof dlRes.text === 'string' && dlRes.text.length > 15000 && dlRes.text.includes('export')) {
-      workerCode = dlRes.text;
-      break;
+  const kv=findKV(env)?.binding;if(!kv)return {ok:false,error:'KV is required for pre-update backup'};
+  let workerCode,verification;
+  try{
+    if(rollback){const previous=await readLastGood(kv);workerCode=previous.code;verification={version:previous.version,sha256:previous.sha256,rollback:true};}
+    else{
+      workerCode=await fetchUpdateText(updateInfo.scriptUrl,env);
+      let expectedHash=String(env.NL_RELEASE_SHA256||'').trim();
+      if(!expectedHash&&updateInfo.checksumUrl){const digest=await fetchUpdateText(updateInfo.checksumUrl,env,4096);expectedHash=digest.match(/^[a-fA-F0-9]{64}(?=\s|$)/)?.[0]||'';if(!expectedHash)throw Error('Invalid checksum asset');}
+      let signatureVerified=false;if(env.NL_RELEASE_PUBLIC_KEY){const signature=String(env.NL_RELEASE_SIGNATURE||(updateInfo.signatureUrl?await fetchUpdateText(updateInfo.signatureUrl,env,4096):'')).trim();if(!signature)throw Error('Pinned release key requires a detached signature');signatureVerified=await verifyReleaseSignature(workerCode,String(env.NL_RELEASE_PUBLIC_KEY).trim(),signature);}
+      verification=await verifyUpdate(workerCode,{signatureVerified,currentVersion:PANEL_VERSION,targetVersion:updateInfo.latestVersion,expectedHash,approvedHash,force});
+      if(verification.needsConfirmation)return {ok:true,needsConfirmation:true,...verification,repo:GITHUB_REPO,error:'Review SHA-256 and approve exact bytes; an untrusted checksum is not a release signature.'};
     }
-  }
-
-  if (!workerCode) {
-    return {
-      ok: false,
-      error: `فایل اجرایی worker-single-file.js در مخزن رسمی (${GITHUB_REPO}) یافت نشد یا هنوز منتشر نشده است.`,
-    };
-  }
+  }catch(e){return {ok:false,error:e.message};}
 
   // 4. Read existing Worker settings so KV bindings, vars & compatibility flags are 100% preserved
   const settingsUrl = `${cfBase}/accounts/${encodeURIComponent(resolvedAccountId)}/workers/scripts/${encodeURIComponent(targetScript)}/settings`;
@@ -1833,6 +1852,7 @@ async function applyOfficialGitHubSelfUpdate({ token, accountId, scriptName, env
         .map((b) => (b.type === 'secret_text' || b.type === 'secret_key' ? { type: 'inherit', name: b.name } : b))
     : [];
 
+  if(preservedBindings.some(b=>b.name==='NL_COORDINATOR')&&!workerCode.includes('NightLineCoordinator'))return {ok:false,error:'Central storage binding requires an exported NightLineCoordinator class'};
   const metadata = {
     main_module: 'worker.js',
     compatibility_date: existing.compatibility_date || '2025-09-01',
@@ -1845,6 +1865,9 @@ async function applyOfficialGitHubSelfUpdate({ token, accountId, scriptName, env
   if (existing.usage_model) metadata.usage_model = existing.usage_model;
   if (existing.placement && typeof existing.placement === 'object') metadata.placement = existing.placement;
 
+  const uploadUrl = `${cfBase}/accounts/${encodeURIComponent(resolvedAccountId)}/workers/scripts/${encodeURIComponent(targetScript)}`;
+  let previousCode;
+  try{previousCode=await downloadCurrentBundle(uploadUrl,cfHeaders);await saveLastGood(kv,previousCode);}catch(e){return {ok:false,error:'Pre-update backup failed: '+e.message};}
   // 5. Upload new ES Module Worker bundle via Cloudflare Workers API
   const form = new FormData();
   form.append('metadata', new Blob([JSON.stringify(metadata)], { type: 'application/json' }));
@@ -1854,7 +1877,7 @@ async function applyOfficialGitHubSelfUpdate({ token, accountId, scriptName, env
     'worker.js'
   );
 
-  const uploadUrl = `${cfBase}/accounts/${encodeURIComponent(resolvedAccountId)}/workers/scripts/${encodeURIComponent(targetScript)}`;
+
   const uploadRes = await fetchJsonWithTimeout(
     uploadUrl,
     {
@@ -1866,7 +1889,9 @@ async function applyOfficialGitHubSelfUpdate({ token, accountId, scriptName, env
   );
 
   if (!uploadRes.ok || !uploadRes.data?.success) {
-    const errMsg = uploadRes.data?.errors?.[0]?.message || 'خطا در بارگذاری کد جدید روی کلادفلر.';
+    const recovery=new FormData();recovery.append('metadata',new Blob([JSON.stringify(metadata)],{type:'application/json'}));recovery.append('worker.js',new Blob([previousCode],{type:'application/javascript+module'}),'worker.js');
+    const recovered=await fetchJsonWithTimeout(uploadUrl,{method:'PUT',headers:cfHeaders,body:recovery},20000);
+    const errMsg = (uploadRes.data?.errors?.[0]?.message || 'Deployment failed')+' · rollback '+(recovered.ok&&recovered.data?.success?'accepted by Cloudflare':'NOT confirmed; restore manually');
     return {
       ok: false,
       error: `بروزرسانی ورکر ناموفق بود: ${errMsg}`,
@@ -1877,7 +1902,11 @@ async function applyOfficialGitHubSelfUpdate({ token, accountId, scriptName, env
     ok: true,
     updated: true,
     previousVersion: PANEL_VERSION,
-    targetVersion: updateInfo.latestVersion || PANEL_VERSION,
+    targetVersion: verification.version,
+    sha256:verification.sha256,
+    verifiedHash:!!verification.verifiedHash,
+    verifiedSignature:!!verification.verifiedSignature,
+    rollback,
     scriptName: targetScript,
     accountId: resolvedAccountId,
     accountName: accInfo.accountName || '',

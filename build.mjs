@@ -115,6 +115,8 @@ const sourceText = [
   'src/ui/lab.html',
   'src/ui/lab.js',
   'src/ui/warp-core.js',
+  'src/ui/warp-extra.js',
+  'src/maintenance.js',
   'src/sub.js',
   'src/worker.js',
   'src/storage.js',
@@ -160,10 +162,8 @@ function dataUri(file, chars) {
       ],
       { stdio: ['ignore', 'ignore', 'pipe'] }
     );
-  } catch {
-    if (!fs.existsSync(cachedSubset)) {
-      fs.copyFileSync(src, cachedSubset);
-    }
+  } catch(error) {
+    throw new Error('Font subsetting failed for '+file+'. Install fonttools[woff] and check pyftsubset. No full-font/cache fallback is allowed. '+String(error.stderr||error.message));
   }
   const buf = fs.readFileSync(cachedSubset);
   console.log(`   ${file.padEnd(32)} ${(buf.length / 1024).toFixed(1).padStart(6)} KB`);
@@ -192,8 +192,17 @@ for (const [k, v] of Object.entries(fontVars)) {
 }
 const minCss = (await esbuild.transform(rawStyle, { loader: 'css', minify: true })).code.trim();
 const minQr = (await esbuild.transform(read(P('src/ui/vendor/qrcode.js')), { loader: 'js', minify: true })).code.trim();
-const minApp = (await esbuild.transform(read(P('src/ui/network.js')) + '\n' + read(P('src/ui/warp-core.js')) + '\n' + read(P('src/ui/lab.js')) + '\n' + read(P('src/ui/app.js')), { loader: 'js', minify: true })).code.trim();
+const minApp = (await esbuild.transform(read(P('src/ui/network.js')) + '\n' + read(P('src/ui/warp-core.js')) + '\n' + read(P('src/ui/warp-extra.js')) + '\n' + read(P('src/ui/lab.js')) + '\n' + read(P('src/ui/app.js')), { loader: 'js', minify: true })).code.trim();
 
+const publicAssets={};
+function publicAsset(name,body,type){const bytes=Buffer.isBuffer(body)?body:Buffer.from(body),hash=crypto.createHash('sha256').update(bytes).digest('hex'),url='/assets/'+name+'.'+hash.slice(0,16);const gzip=gzipSync(bytes,{level:9});publicAssets[url]={type,etag:'"'+hash+'"',gzip:gzip.toString('base64'),rawBytes:bytes.length,gzipBytes:gzip.length};return url;}
+let publicCss=minCss;
+for(const f of FONTS){const uri=fontVars[f.key],bytes=Buffer.from(uri.split(',')[1],'base64'),url=publicAsset(f.file,bytes,'font/woff2');publicCss=publicCss.replaceAll(uri,url);}
+const cssUrl=publicAsset('panel.css',publicCss,'text/css; charset=utf-8');
+const jsUrl=publicAsset('panel.js',minQr+'\n'+minApp,'text/javascript; charset=utf-8');
+const panelEtag='"'+crypto.createHash('sha256').update(VERSION+cssUrl+jsUrl+read(P('src/ui/index.html'))+JSON.stringify(config)+skylineHtml+sealSvg).digest('hex')+'"';
+fs.writeFileSync(P('src/generated/public-assets.js'),'// Generated immutable, content-addressed public assets.\nconst assets='+JSON.stringify(publicAssets)+';const decoded=new Map();export const PANEL_ETAG='+JSON.stringify(panelEtag)+';export function servePublicAsset(request,url){const a=assets[url.pathname];if(!a)return new Response("Not found",{status:404});const headers={"content-type":a.type,"cache-control":"public, max-age=31536000, immutable",etag:a.etag,"x-content-type-options":"nosniff","content-encoding":"gzip"};if(!["GET","HEAD"].includes(request.method))return new Response(null,{status:405,headers:{allow:"GET, HEAD"}});if(request.headers.get("if-none-match")===a.etag)return new Response(null,{status:304,headers});if(!decoded.has(url.pathname))decoded.set(url.pathname,Uint8Array.from(atob(a.gzip),c=>c.charCodeAt(0)));return new Response(request.method==="HEAD"?null:decoded.get(url.pathname),{encodeBody:"manual",headers});}\n');
+fs.writeFileSync(P('.arena/asset-budget.json'),JSON.stringify({version:VERSION,assets:Object.fromEntries(Object.entries(publicAssets).map(([k,v])=>[k,{rawBytes:v.rawBytes,gzipBytes:v.gzipBytes}]))},null,2));
 let indexTemplate = read(P('src/ui/index.html')).replace('{{LAB_CONTENT}}',read(P('src/ui/lab.html'))).replaceAll('{{VERSION}}', VERSION);
 // Embed original icons from each application's official repository: no runtime CDN dependency.
 for (const [key, file] of Object.entries({
@@ -223,8 +232,10 @@ const shellTemplate = indexTemplate
   .replace('{{CONFIG}}', () => JSON.stringify({ host: config.host, tunnelPath: config.tunnelPath }))
   .replace('{{STYLE}}', () => '/*__NL_STYLE__*/')
   .replace('{{SKYLINE}}', () => '/*__NL_SKY__*/')
-  .replace('{{QR}}', () => '/*__NL_QR__*/')
-  .replace('{{APP}}', () => minApp);
+  .replace('<style>{{STYLE}}</style>', () => '<link rel="stylesheet" href="'+cssUrl+'">')
+  .replace('<style>/*__NL_STYLE__*/</style>', () => '<link rel="stylesheet" href="'+cssUrl+'">')
+  .replace('<script>{{QR}}</script>', '')
+  .replace('<script>{{APP}}</script>', () => '<script src="'+jsUrl+'" defer></script>');
 
 // Build stealth `dist/index.html` for Cloudflare Pages (CSPRNG polymorphic key, 0 plain proxy keywords)
 const bodyMatch = indexTemplate.match(/<body[^>]*>([\s\S]*)<\/body>/i);
@@ -514,7 +525,7 @@ function __NL_DEC__(i) {
 
 async function compileStealthWorker(includeShell, bannerComment) {
   const archiveJson = JSON.stringify({
-    style: minCss,
+    style: publicCss,
     qr: minQr,
     skyline: skylineHtml,
     shell: includeShell ? shellTemplate : '',
@@ -609,7 +620,7 @@ export async function getPanelHtml() {
 
 const standaloneCode = await compileStealthWorker(
   true,
-  `// NIGHTLINE v${VERSION} — Cloudflare Workers Standalone Edition`
+  `// NIGHTLINE v${VERSION} — Cloudflare Workers Standalone Edition\n// NIGHTLINE-HEALTH: /health`
 );
 fs.writeFileSync(P('worker-single-file.js'), standaloneCode);
 if(BUILD_PAGES){fs.writeFileSync(P('dist/_worker.js'),standaloneCode);console.log('· Pages uses the verified standalone module; no static-shell binding required.');}

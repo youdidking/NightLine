@@ -1,0 +1,1 @@
+export default [{ignores:['node_modules/**','dist/**','.arena/**','src/generated/**','worker-single-file.js','nightline-installer.js']},{files:['src/**/*.js','*.mjs'],languageOptions:{ecmaVersion:'latest',sourceType:'module'},rules:{'no-dupe-args':'error','no-dupe-keys':'error','no-constant-binary-expression':'error','constructor-super':'error','valid-typeof':'error'}}];
